@@ -96,10 +96,6 @@ float FIR(float in){
     return out;                        
 }
 
-
-
-
-
 //LOW_PASS,Fs=40,RECTANGLE,wp=10,ws=11
 #define FILTERTAPS2 5
 float coef2[FILTERTAPS2] = {0.000000,0.318310,0.500000,0.500000,0.318310};
@@ -123,9 +119,6 @@ float FIR2(float in){
 
 
 
-
-
-
 //LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
 #define FILTERTAPS3 5
 float coef3[FILTERTAPS3] = {0.006055,0.092153,0.261644,0.261644,0.092153};
@@ -146,9 +139,6 @@ float FIR3(float in){
 }
 
 
-
-
-
 //LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
 #define FILTERTAPS4 5
 float coef4[FILTERTAPS4] = {0.006055,0.092153,0.261644,0.261644,0.092153};
@@ -166,68 +156,6 @@ float FIR4(float in){
     out *= gain4;                        
     k = (k+1) % FILTERTAPS4;                  
     return out;                        
-}
-
-
-
-void CalculateCCD0 (void) 
-{
-  
-  
-}
-
-
-
-void RD_CCD(uchar channel)//adc0=L,adc1=R 
-{
-  byte i=0,tslp=0;
-  if(channel==0){
-      
-    DisableInterrupts;
-    TSL_CLK=1;//起始电平高 
-    TSL_SI=0; //起始电平低
-    Dly_us(1); //合理的延时
-        
-    TSL_SI=1; //上升沿
-    TSL_CLK=0;//下降沿
-    Dly_us(1); //合理延时
-        
-    TSL_CLK=1;//上升沿
-    TSL_SI=0; //下降沿
-    Dly_us(1); //合理延时      
-    for(i=0;i<128;i++)
-    { 
-      TSL_CLK=0;//下降沿    
-      Dly_25ns(5); //合理延时
-      ADV[channel][tslp]=(byte)(ADCValue(channel));  //AD采集
-      ++tslp;
-      TSL_CLK=1;//上升沿 
-      Dly_25ns(5); //合理延时    
-    } 
-  } else if(channel==1){
-      
-    DisableInterrupts;
-    TSL_CLK1=1;//起始电平高 
-    TSL_SI1=0; //起始电平低
-    Dly_us(1); //合理的延时
-        
-    TSL_SI1=1; //上升沿
-    TSL_CLK1=0;//下降沿
-    Dly_us(1); //合理延时
-        
-    TSL_CLK1=1;//上升沿
-    TSL_SI1=0; //下降沿
-    Dly_us(1); //合理延时      
-    for(i=0;i<128;i++)
-    { 
-      TSL_CLK1=0;//下降沿    
-      Dly_25ns(5); //合理延时
-      ADV[channel][i]=(byte)(ADCValue(channel));  //AD采集
-      TSL_CLK1=1;//上升沿 
-      Dly_25ns(5); //合理延时    
-    } 
-  }
-  EnableInterrupts; 
 }
 
 
@@ -252,7 +180,7 @@ void RD_CCD(uchar channel)//adc0=L,adc1=R
 }
   
 
-void Port_Init(void)  //#############################################
+void Port_Init(void)  
 { 
   //DDRA=0XFF;  
   //DDRB = 0XFF;      //原版
@@ -305,42 +233,40 @@ void getAD (void)
     float temp=0;
     time2=micros();
     //DisableInterrupts;
-    tlycs=ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5) 
-	       +ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5);
+    tlycs=ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5) 
+	       +ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5);
 	  temp=tlycs/10.0;
 	  testGyroZ1=temp;
 	  gyro=(temp-TLYLDZ1)*TLYBL; 
 	   
-	   tlycs=ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7) 
-	       +ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7)+ATDChannelx(7);
+	   tlycs=ADChannelx(7)+ADChannelx(7)+ADChannelx(7)+ADChannelx(7)+ADChannelx(7) 
+	       +ADChannelx(7)+ADChannelx(7)+ADChannelx(7)+ADChannelx(7)+ADChannelx(7);
 	  temp=tlycs/10.0;
 	  testGyroZ2=temp;
 	  
-	  tlycs=ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6) 
-	       +ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6);
+	  tlycs=ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6) 
+	       +ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6);
 	  temp=tlycs/10.0;
 	  testGyroX1=temp;
 	  
-	  tlycs=ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15) 
-	       +ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15)+ATDChannelx(15);
+	  tlycs=ADChannelx(15)+ADChannelx(15)+ADChannelx(15)+ADChannelx(15)+ADChannelx(15) 
+	       +ADChannelx(15)+ADChannelx(15)+ADChannelx(15)+ADChannelx(15)+ADChannelx(15);
 	  temp=tlycs/10.0;
 	  testGyroX2=temp;
 		 
 		 
-		 
-		 
-		 jiao=ATDChannelx(4)+ATDChannelx(4)+ATDChannelx(4) + ATDChannelx(4)+ATDChannelx(4)
-          +ATDChannelx(4)+ATDChannelx(4)+ATDChannelx(4) + ATDChannelx(4)+ATDChannelx(4);           
+		 jiao=ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4)
+          +ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4);           
     Aangle=jiao/20.0;              	 
 		Aangle=(Aangle-JSDLD)*0.13;//0.12;	
 		angleAZ=jiao/10.0-accOffset;
 		
-		jiao=ATDChannelx(2)+ATDChannelx(2)+ATDChannelx(2) + ATDChannelx(2)+ATDChannelx(2)
-          +ATDChannelx(2)+ATDChannelx(2)+ATDChannelx(2) + ATDChannelx(2)+ATDChannelx(2); 
+		jiao=ADChannelx(2)+ADChannelx(2)+ADChannelx(2) + ADChannelx(2)+ADChannelx(2)
+          +ADChannelx(2)+ADChannelx(2)+ADChannelx(2) + ADChannelx(2)+ADChannelx(2); 
     angleAX=jiao/10.0-accOffset;	
     
-    jiao=ATDChannelx(3)+ATDChannelx(3)+ATDChannelx(3) + ATDChannelx(3)+ATDChannelx(3)
-          +ATDChannelx(3)+ATDChannelx(3)+ATDChannelx(3) + ATDChannelx(3)+ATDChannelx(3); 
+    jiao=ADChannelx(3)+ADChannelx(3)+ADChannelx(3) + ADChannelx(3)+ADChannelx(3)
+          +ADChannelx(3)+ADChannelx(3)+ADChannelx(3) + ADChannelx(3)+ADChannelx(3); 
     angleAY=jiao/10.0-accOffset;
     
     timer2=micros()-time2;

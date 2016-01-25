@@ -72,7 +72,7 @@ void ADC_Init0(void)
   ATD0CTL3 = 0b10001000; //采样结果右对齐，转换1个通道
   ATD0CTL4 = 0b00100001; //设置采样时间和频率,fATDCLK=fBUS/(2 ×(PRS + 1))
 }
-int ATDChannelx(unsigned char Channel)
+int ADChannelx(unsigned char Channel)
 {  
   ATD0CTL5_Cx = Channel;
   while(!ATD0STAT0_SCF);
