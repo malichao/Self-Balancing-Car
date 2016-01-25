@@ -23,8 +23,9 @@ SOFTWARE.
 #ifndef CCD_H
 #define CCD_H
 
-void RD_TSL(void);
-void CalculateFZ (void); 
-void GetBlack (void);
+/*
+ * A driver to read TSL1401 Linear CCD.
+ * */
+void RD_CCD(uchar channel)//adc0=L,adc1=R
 
 #endif
