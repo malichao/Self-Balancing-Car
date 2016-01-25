@@ -405,15 +405,15 @@ void getAD (void)
     setADC12bit(); 
     time2=micros();
     //DisableInterrupts;
-    tlycs=ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5) 
-         +ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5)+ATDChannelx(5);
+    tlycs=ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5) 
+         +ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5);
     temp=tlycs/10.0;
     testGyroZ1=temp;
     gyro=(temp-TLYLDZ1)*TLYBL; 
      
     
-    tlycs=ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6) 
-         +ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6)+ATDChannelx(6);
+    tlycs=ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6) 
+         +ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6);
     temp=tlycs/10.0;
     testGyroX1=temp;
     
@@ -421,18 +421,18 @@ void getAD (void)
      
      
      
-     jiao=ATDChannelx(4)+ATDChannelx(4)+ATDChannelx(4) + ATDChannelx(4)+ATDChannelx(4)
-          +ATDChannelx(4)+ATDChannelx(4)+ATDChannelx(4) + ATDChannelx(4)+ATDChannelx(4);           
+     jiao=ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4)
+          +ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4);           
     Aangle=jiao/20.0;                
     Aangle=(Aangle-JSDLD)*0.13;//0.12;  
     angleAZ=jiao/10.0-accOffset;
     
-    jiao=ATDChannelx(2)+ATDChannelx(2)+ATDChannelx(2) + ATDChannelx(2)+ATDChannelx(2)
-          +ATDChannelx(2)+ATDChannelx(2)+ATDChannelx(2) + ATDChannelx(2)+ATDChannelx(2); 
+    jiao=ADChannelx(2)+ADChannelx(2)+ADChannelx(2) + ADChannelx(2)+ADChannelx(2)
+          +ADChannelx(2)+ADChannelx(2)+ADChannelx(2) + ADChannelx(2)+ADChannelx(2); 
     angleAX=jiao/10.0-accOffset;  
     
-    jiao=ATDChannelx(3)+ATDChannelx(3)+ATDChannelx(3) + ATDChannelx(3)+ATDChannelx(3)
-          +ATDChannelx(3)+ATDChannelx(3)+ATDChannelx(3) + ATDChannelx(3)+ATDChannelx(3); 
+    jiao=ADChannelx(3)+ADChannelx(3)+ADChannelx(3) + ADChannelx(3)+ADChannelx(3)
+          +ADChannelx(3)+ADChannelx(3)+ADChannelx(3) + ADChannelx(3)+ADChannelx(3); 
     angleAY=jiao/10.0-accOffset;
     
     timer2=micros()-time2;
@@ -940,6 +940,7 @@ void interrupt 67 PIT1(void)
    PITTF_PTF0 = 1; //clear interrupts flag
    PORTA_PA7=1;
    
+   //reading switches signal
    temp=PTH;
     StopCarOn=temp&0b00000001;
     //temp1=temp&0b00000111;
@@ -966,6 +967,7 @@ void interrupt 67 PIT1(void)
   temp=PTH;
     temp1=temp>>1&0b00000001; //accelerate
   
+  //Determin what to do according to the switch state.
   switch(temp1){
     
     case 0:
@@ -998,6 +1000,7 @@ void interrupt 67 PIT1(void)
             break;
   }
   
+  //Decide whether we're going to deal with obstacles or not.
   temp1=temp>>2&0b00000001;
   if(temp1){
       
@@ -1045,6 +1048,9 @@ void interrupt 67 PIT1(void)
      CalculateCCD0();
    
    }
+
+
+   
    getAD ();
    AngleCalculate();
    tr2=micros()-t2;
