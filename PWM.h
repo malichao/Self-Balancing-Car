@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -23,7 +23,7 @@ SOFTWARE.
 #ifndef   PWM_H
 #define   PWM_H
 
-void PWM_Init(void);
+void initPWM(void);
 
 
 #endif
