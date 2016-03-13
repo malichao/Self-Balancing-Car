@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -23,13 +23,9 @@ SOFTWARE.
 #ifndef   ADC_H
 #define   ADC_H
 
-/*
-*****************************************************************************
-* Description: No
-*****************************************************************************
-*/
+
 void ADC_Init(void);
-uint ADCValue(uchar channel);//adc∂¡»°
+uint ADC_Read(uchar channel);
 void setADC8bit();
 void setADC12bit();
 

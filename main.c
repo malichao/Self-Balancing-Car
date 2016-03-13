@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -828,20 +828,24 @@ int mid(int a,int b,int c) {
   
 }
 
-void CCDCalibration() {
+void CCDCalibration() 
+{
+  int i;
+  //There are actually two cameras on the car for experiment,
+  //in this code,only one is used.
+  RD_CCD(0);
+  for(i=0;i<10;i++) {
+    //Delay some time between two sampling
+      Dly_ms(ccdMultiple*5-1);
+      RD_CCD(0);
+      CalculateCCD0();
+      Threshold+=CCDAvr0;
+  }
+  //Calculate the average value
+  Threshold/=10;
+  obstacleSign=false;
+}
 
-unsigned long tt=micros();
-int i;
-RD_CCD(0);
-for(i=0;i<10;i++) {
-    Dly_ms(ccdMultiple*5-1);
-    RD_CCD(0);
-    CalculateCCD0();
-    Threshold+=CCDAvr0;
-}
-Threshold/=10;
-obstacleSign=false;
-}
 
 
 char sendSign=0,updateSign=0;
