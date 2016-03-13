@@ -23,9 +23,8 @@ SOFTWARE.
 #ifndef CCD_H
 #define CCD_H
 
-/*
- * A driver to read TSL1401 Linear CCD.
- * */
-void RD_CCD(uchar channel)//adc0=L,adc1=R
+enum CCD{CCD0,CCD1};
+
+void readCCD(uchar channel);
 
 #endif

@@ -24,8 +24,8 @@ SOFTWARE.
 #define   ADC_H
 
 
-void ADC_Init(void);
-uint ADC_Read(uchar channel);
+void initADC(void);
+uint readADC(uchar channel);
 void setADC8bit();
 void setADC12bit();
 

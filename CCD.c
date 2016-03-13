@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,57 +32,45 @@ SOFTWARE.
 //#include "includes.h"
 #include "ADC.h"
 
+
+
+inline void setCLKLow(int time){
+  TSL_CLK=0;    //Set the clk to low
+  delayUs(time);  //delay for 1us
+}
+inline void setCLKHigh(int time){
+  TSL_CLK=0;    //Set the clk to low
+  delayUs(time);  //delay for 1us
+}
+
 /*
- * A driver to read TSL1401 Linear CCD.
- * */
-void RD_CCD(uchar channel)//adc0=L,adc1=R
-{
-  byte i=0,tslp=0;
-  if(channel==0){
+ * Before sampling the ADC value of the CCD sensor,we must
+ * set the SI signal to inform the CCD sensor to get ready.
+ * See datasheet for timing detail.
+ */
+void initCCD(){
 
+    TSL_SI=0;     
+    setCLKLow(1);
+    
+    TSL_SI=1;     
+    delayUs(1);   
+    
+    TSL_SI=0;     
+    setCLKHigh(1);
+}
+
+/*
+ * Read the CCD sensor.Currently there are at most only two sensors on
+ * the car.
+ */
+void readCCD(CCD num){
     DisableInterrupts;
-    TSL_CLK=1;//起始电平高
-    TSL_SI=0; //起始电平低
-    Dly_us(1); //合理的延时
-
-    TSL_SI=1; //上升沿
-    TSL_CLK=0;//下降沿
-    Dly_us(1); //合理延时
-
-    TSL_CLK=1;//上升沿
-    TSL_SI=0; //下降沿
-    Dly_us(1); //合理延时
-    for(i=0;i<128;i++)
-    {
-      TSL_CLK=0;//下降沿
-      Dly_25ns(5); //合理延时
-      ADV[channel][tslp]=(byte)(ADCValue(channel));  //AD采集
-      ++tslp;
-      TSL_CLK=1;//上升沿
-      Dly_25ns(5); //合理延时
-    }
-  } else if(channel==1){
-
-    DisableInterrupts;
-    TSL_CLK1=1;//起始电平高
-    TSL_SI1=0; //起始电平低
-    Dly_us(1); //合理的延时
-
-    TSL_SI1=1; //上升沿
-    TSL_CLK1=0;//下降沿
-    Dly_us(1); //合理延时
-
-    TSL_CLK1=1;//上升沿
-    TSL_SI1=0; //下降沿
-    Dly_us(1); //合理延时
-    for(i=0;i<128;i++)
-    {
-      TSL_CLK1=0;//下降沿
-      Dly_25ns(5); //合理延时
-      ADV[channel][i]=(byte)(ADCValue(channel));  //AD采集
-      TSL_CLK1=1;//上升沿
-      Dly_25ns(5); //合理延时
-    }
+    InitCCD();
+  for(int i=0;i<128;i++){
+    setCLKLow(1);
+    ADV[num][i]=ADC_Read(num);
+    setCLKHigh(1);
   }
   EnableInterrupts;
 }
