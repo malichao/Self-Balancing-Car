@@ -21,44 +21,34 @@
  */
 
 /*********************************************************
- Code Warrior 5.0/1
- Target : MC9S12XS128
- Crystal: 16.000Mhz
- busclock:80.000MHz
- pllclock:160.000MHz  
- 
- 
- 速度闭环，测试1.5m/s撞墙不倒
- 去掉了速度前后方向判断，只能前进不能后退
- 原来官方的方向判断方法有问题，会导致速度不稳定
- 速度控制分段P
+Code Warrior 5.0/1
+Target : MC9S12XS128
+Crystal: 16.000Mhz
+busclock:80.000MHz
+pllclock:160.000MHz  
 
- 前后式CCD测试
- 小前瞻45，大前瞻60
- 小前瞻保底程序
- 31M/22秒~28秒
+Some development notes:
+-Speed closed loop control,hit the wall at 1.5m/s with stable result
+-Discard the direction judge since the car only runs forward on the track
+-Segmentize the speed P coefficient
 
- 小车跑动时路径检查测试
+-Set the CCD view to 45 - 60 cm gets a pretty good result
+-Current speed : 31 meter /22 - 28s
+-Add track width calculation during running
 
- 各函数运行时间：
- CCD 8bit 采样         572us
- AccGyro  采样+计算    784us
- 方向、速度控制、输出  208us
+function execution time:
+CCD       | 8bit sampling         | 572us
+Acc and Gyro  | sampling and computation  | 784us
+PID controller  |               | 208us
 
- 速度测试
- 前瞻40cm@68°
- 38m--31.5s
- 稳定性不错
+some good settings: 
+40cm foresight view @ 68°,38m-31.5s,stable
+40cm foresight view @ 68°,38m-26s,stable
 
- 38m--26s
+-Add median filter to CCD data
+-Add start line detect,start line has more than 6 edges
 
- 非线性PID参数，直立效果超好，但是加速困难？？
- CCD数据中值滤波
- 加入起跑线检测，6个跳变沿
-
- P=36 setSpeedMM=1800
-
- ********************************************************/
+********************************************************/
 
 #include "derivative.h"
 #include "math.h"
