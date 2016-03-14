@@ -24,7 +24,9 @@ SOFTWARE.
 #define MOTOR_H
 
 void initBMQ();
-void getSpeed();
+void measureSpeed();
+void getSpeed(int16_t *speedL,int16_t *speedR);
+int16_t getSpeedAll();
 void shutDown();
 void turnOn();
 void calculateSpeedOutput();

@@ -45,8 +45,10 @@ void initBMQ(){
 } 
 
 //Since there's only one external counter in the chip so we
-//use another counter to measure the encoder on the left motor
-void getSpeed(){
+//use another counter to measure the encoder on the left motor.
+//This function should be called as often as possible so that the
+//external counter won't overflow.
+void measureSpeed(){
   DisableInterrupts;
   int tempL,tempR;
   tempL=PORTB;       //Read the external encoder counter
@@ -59,6 +61,15 @@ void getSpeed(){
   SpeedL=SpeedL+tempL;
   SpeedR=SpeedR+tempR;
   EnableInterrupts;
+}
+
+void getSpeed(int16_t *speedL,int16_t *speedR){
+  *speedL=SpeedL;
+  *speedR=SpeedR;
+}
+
+int16_t getSpeedAll(){
+  return (SpeedR+SpeedL)/2;
 }
 
 void setSpeed(float myspeed) {

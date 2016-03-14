@@ -29,44 +29,51 @@ float getAngle(){
   return angleFinal;
 }
 
+float getAngularSpeed(){
+  return GyroZ1 - GyroOffsetZ1;
+}
+
 //Use complementary filter to fuse the acc and gyro data
 void calculateAngle() {
-    uint16_t32_t time=micros();
+  uint16_t32_t time = micros();
 
-    float tempX,tempY,tempZ;
-    tempX=angleAccX*5/4096*1000/AccSense;
-    tempY=angleAccY*5/4096*1000/AccSense;
-    tempZ=angleAccZ*5/4096*1000/AccSense;
-    
-    float gravityGate=0.06,gravityVibrationGate=0.2;
-    angleAcc=-atan2(angleAccX,angleAccZ)*180/PI;
-    gravity=sqrt(tempX*tempX+tempY*tempY+tempZ*tempZ);
-    angleAcc=FIR(0,angleAcc); 
+  float tempX, tempY, tempZ;
+  tempX = angleAccX * 5 / 4096 * 1000 / AccSense;
+  tempY = angleAccY * 5 / 4096 * 1000 / AccSense;
+  tempZ = angleAccZ * 5 / 4096 * 1000 / AccSense;
 
-    float weight=0.99; 
-    float weightMax=0.995,weightMin=0.98;
-    //didn't use #if defined because we want to evaluate both method online
-    if(debug) {    
-      float weightFlag=0;                       
-      gravityError=fabs(gravity-gravityG);
+  float gravityGate = 0.06, gravityVibrationGate = 0.2;
+  angleAcc = -atan2(angleAccX, angleAccZ) * 180 / PI;
+  gravity = sqrt(tempX * tempX + tempY * tempY + tempZ * tempZ);
+  angleAcc = FIR(0, angleAcc);
 
-      if(gravityError>gravityVibrationGate){  // avoid vibration
-        weightFlag=10; 
-        weight=1;
-      } else{
-        weight=weightMin+(weightMax-weightMin)*gravityError/gravityVibrationGate;
-        weightFlag=(weight-weightMin)*100;
-        }
+  float weight = 0.99;
+  float weightMax = 0.995, weightMin = 0.98;
+//didn't use #if defined because we want to evaluate both method online
+  if (debug) {
+    float weightFlag = 0;
+    gravityError = fabs(gravity - gravityG);
+
+    if (gravityError > gravityVibrationGate) {  // avoid vibration
+      weightFlag = 10;
+      weight = 1;
+    } else {
+      weight = weightMin + (weightMax - weightMin) * gravityError / gravityVibrationGate;
+      weightFlag = (weight - weightMin) * 100;
     }
-    
-    time=micros()-time;
-    if(time>50000)                   //50ms,timeout
-     angleGyroDelta=0;               //large delay will effect the gyro int16_tegration
-    else
-     angleGyroDelta=(GyroZ1-GyroOffsetZ1)*5/4096*1.5/5.1/GyroSense*time/1000;
-    
-    angleFinal=angleAcc*(1-weight)+(angleGyroDelta+angleFinal)*weight;
+  }
+
+  time = micros() - time;
+  if (time > 50000)                   //50ms,timeout
+    angleGyroDelta = 0;   //large delay will effect the gyro int16_tegration
+  else
+    angleGyroDelta = (GyroZ1 - GyroOffsetZ1) * 5 / 4096 * 1.5 / 5.1
+        / GyroSense * time / 1000;
+
+  angleFinal = angleAcc * (1 - weight)
+      + (angleGyroDelta + angleFinal) * weight;
 }
+
 
 //Loop unrolled to speed up
 void getAccGyroValues () {

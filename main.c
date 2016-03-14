@@ -1,7 +1,7 @@
 /*
  Copyright (c) <2013-2016> <Malcolm Ma>
 
- Permission is hereby granted, free of int8_tge, to any person obtaining a copy 
+ Permission is hereby granted, free of charge, to any person obtaining a copy 
  of this software and associated documentation files (the "Software"), to deal 
  in the Software without restriction, including without limitation the rights 
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
@@ -61,7 +61,6 @@
  ********************************************************/
 
 #include "derivative.h"
-#include "stdio.h"
 #include "math.h"
 #include "SCI.h"
 #include "ADC.h"
@@ -69,7 +68,7 @@
 #include "PWM.h"
 #include "macros.h"
 #include "filters.h"
-#include <IMU.h>
+#include "IMU.h"
 
 extern int16_t CCDDebugSwitch = 0;
 extern int16_t CCDDebugSwitch2 = 2;
@@ -159,7 +158,7 @@ void main() {
 void checkSwitch() {
   static uint8_t lastSwitch, switchChange;
   uint8_t temp,temp1;
-  
+
   //reading switches signal
   temp = PTH;
   StopCarOn = temp & 0b00000001;
@@ -263,7 +262,7 @@ void interrupt 67 PIT1(){
   PORTA_PA7=1;
 
   checkSwitch();
-
+  measureSpeed();
   CCDTime++;
   if(CCDTime>=ccdMultiple) {
     CCDTime=0;
