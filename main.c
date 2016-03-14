@@ -56,7 +56,7 @@
  CCD数据中值滤波
  加入起跑线检测，6个跳变沿
 
- P=36 SetSpeedMM=1800
+ P=36 setSpeedMM=1800
 
  ********************************************************/
 
@@ -64,23 +64,17 @@
 #include "math.h"
 #include "SCI.h"
 #include "ADC.h"
+#include "IMU.h"
 #include "times"
 #include "PWM.h"
 #include "macros.h"
 #include "filters.h"
-#include "IMU.h"
+#include "PIDControllers.h"
 
 extern int16_t CCDDebugSwitch = 0;
 extern int16_t CCDDebugSwitch2 = 2;
-
-
-//CCD debugging settings
-int8_t debug = 1;
-float timer1, time1, timer2, time2, timer3, time3; //Some timer profilers to speed up the code
-
-long map(long x, long in_min, long in_max, long out_min, long out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
+uint8_t StopCarAtFinish=true;
+float DefaultAngle = -71.5;
 
 void sendCCDData(int8_t arr[]) {
   for (int16_t i=0;i<CCD_PIXELS;i++) {
@@ -130,25 +124,23 @@ void printOut() {
 
 void main() {
   initHardwares();
+
   //while(1){speedout ();getspeed();Dly_ms(5);}  //Test motors
 
   for (;;) {
     if (CCDDebugSwitch == 0)
       printout();
-
     if (switchChange == true) {
       Dly_ms(2000);
       switchChange = false;
     }
-
     if (CCDDebugSwitch == 1)
       sendCCDData(CCDBuf);
     sendSign = 0;
-
     if (reachedEnd() == true) {
-      if (StopCarOn == true) {
+      if (StopCarAtFinish == true) {
         shutdown();
-        while (StopCarOn == true);  //wait for start signal
+        while (StopCarAtFinish == true);  //wait for start signal
       }
     }
   }
@@ -159,128 +151,67 @@ void checkSwitch() {
   static uint8_t lastSwitch, switchChange;
   uint8_t temp,temp1;
 
+  float setSpeedMM;
+
   //reading switches signal
   temp = PTH;
-  StopCarOn = temp & 0b00000001;
+  StopCarAtFinish = temp & 0b00000001;
   //temp1=temp&0b00000111;
   //SpeedControlP=temp1*12;
   temp1 = temp >> 3 & 0b00000111;
   if (temp1 == 0)
-    SetSpeedMM = 0;
+    setSpeedMM = 0;
   else
-    SetSpeedMM = -1400 + temp1 * 200 * -1;  //steady state :1800
-  fspeed = SetSpeedMM;
-  //setSpeed(SetSpeedMM);
+    setSpeedMM = -1400 + temp1 * 200 * -1;  //steady state :1800
+
+  //setSpeed(setSpeedMM);
   temp1 = temp >> 6 & 0b0000001;
   if (temp1 != temp2) {
-    OriginPoint -= 1;
+    DefaultAngle -= 1;
     temp2 = temp1;
   }
   temp1 = temp >> 7 & 0b0000001;
   if (temp1 != temp3) {
-    OriginPoint += 1;
+    DefaultAngle += 1;
     temp3 = temp1;
   }
 
-  temp = PTH;
-  temp1 = temp >> 1 & 0b00000001; //accelerate
-
-  //Determine what to do according to the switch state.
-  switch (temp1) {
-    case 0:
-      tempPoint = OriginPoint;
-      break;
-    case 1:
-      if (abs(LineCenter - 64) < 8) {
-        tempSpeed = CarSpeed * MMperPulse * 1000 / (5 * scPeriod);
-        if (tempSpeed - 900 > SetSpeedMM)
-          tempPoint = OriginPoint + 5;
-        else if (tempSpeed - 800 > SetSpeedMM)
-          tempPoint = OriginPoint + 4;
-        else if (tempSpeed - 700 > SetSpeedMM)
-          tempPoint = OriginPoint + 3;
-        else if (tempSpeed - 600 > SetSpeedMM)
-          tempPoint = OriginPoint + 2;
-        else if (tempSpeed - 500 > SetSpeedMM)
-          tempPoint = OriginPoint + 1;
-        else if (tempSpeed - 400 > SetSpeedMM)
-          tempPoint = OriginPoint + 0.5;
-        else
-          tempPoint = OriginPoint;
-      } else {
-        if (tempSpeed < SetSpeedMM)
-          tempPoint = OriginPoint - 1;
-        else
-          tempPoint = OriginPoint;
-      }
-      break;
-  }
-
-  //Decide whether we're going to deal with obstacles or not.
-  temp1 = temp >> 2 & 0b00000001;
-  if (temp1) {
-
-    if (obstacleSign == true) {
-      obstacleCounter++;
-      if (obstacleCounter >= 100) {
-        obstacleCounter = 0;
-        obstacleSign = false;
-      }
-      if (tempSpeed < -2500)
-        tempPoint = OriginPoint - 4;
-      else if (tempSpeed < -2200)
-        tempPoint = OriginPoint - 3;
-      else if (tempSpeed < -2000)
-        tempPoint = OriginPoint - 2;
-      else if (tempSpeed < -1800)
-        tempPoint = OriginPoint - 1;
-    }
-  }
-
-  if (lastSwitch != temp) {
-    switchChange = true;
-    Setpoint = OriginPoint;
-    setSpeed(-50);
-    reachedEnd()Count = 0;
-    reachedEnd()Timer = millis();
-    reachedEnd() = false;
-  }
-  if (switchChange == false) {
-    if (abs(LineCenter - 64) > 12)
-      SetSpeedMM = -1800;
-    Setpoint = tempPoint;
-    setSpeed (SetSpeedMM);
-  }
-  lastSwitch = temp;
+  setTarget(setSpeedMM,DefaultAngle);
 }
 
-
+/*
+ * Timer ISR
+ * This ISR is called at 5ms interval.All sensors measurement,PID controller
+ * calculation,and motor drive are called one by one in the timer ISR.All functions
+ * execution time are tested to be smaller than 5ms.Also the linear CCD requires a
+ * precise 5ms exposure time and the gyroscopes require short integral time,thus
+ * they are called in the ISR to keep the timing neat.
+ *
+ * Note that although all the functions are called every time but not all of them
+ * are performed.e.g.,speed PID controller executes every 50ms and direction PID
+ * execute every 20ms.An internal counter takes care of this timing requirement.
+ * But for other functions,they should be called as often as possible.e.g.,updateMotor()
+ * checks if the car is tilting too much and if so it will turn off the motor to
+ * protect the car.
+ */
 #pragma CODE_SEG __NEAR_SEG NON_BANKED
-float time, timer;
 void interrupt 67 PIT1(){
-  PITTF_PTF0 = 1; //clear interrupts flag
+  PITTF_PTF0 = 1;         //clear interrupts flag
   PORTA_PA7=1;
 
   checkSwitch();
   measureSpeed();
-  CCDTime++;
-  if(CCDTime>=ccdMultiple) {
-    CCDTime=0;
-    readCCD(CCD0);
-    calculateCCD();
-  }
-
-  getAccGyrovalues();
-  calculateAngle();
-
+  updateCCD();
+  updateIMU();
+  
   int16_t speedL,speedR;
   int16_t *pL,*pR;
   pL=&speedL;
   pR=&speedR;
-  PIDControl();
   
-  SpeedOutCalculate();
-  speedout ();
+  PIDControl(pL,pR);
+  setSpeed(*pL,*pR);
+  updateMotor();
 }
 #pragma CODE_SEG DEFAULT         
 

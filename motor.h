@@ -24,13 +24,14 @@ SOFTWARE.
 #define MOTOR_H
 
 void initBMQ();
-void measureSpeed();
-void setSpeed(const int16_t speedL,const int16_t speedR);
-void setSpeedMM(const float speedMML,const float speedMMR);
-void getSpeed(int16_t *speedL,int16_t *speedR);
-int16_t getSpeedAll();
 void motorOff();
 void motorOn();
-static void speedOut();
+void updateMotor();
+void measureSpeed();
+int16_t getSpeedAll();
+void getSpeed(int16_t *speedL,int16_t *speedR);
+void setSpeed(const int16_t speedL,const int16_t speedR);
+void setSpeedMM(const float speedMML,const float speedMMR);
 
+static void speedOut();
 #endif

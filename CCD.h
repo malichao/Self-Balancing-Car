@@ -27,12 +27,15 @@ SOFTWARE.
 #define CCD1 1
 #define CCD_PIXELS 128
 #define STEP 5
+#define CCD_UPDATE_PERIOD 1
 
-void readCCD(uint16_t num);
-void calculateCCD();
+void 	updateCCD(uint16_t num);
 int16_t getLineCenter();
-int8_t reachedEnd();
+int8_t 	reachedEnd();
+
+static void calculateCCD();
+static void startReadingCCD();
 static inline void setCLKLow(const uint16_t time);
 static inline void setCLKHigh(const uint16_t time);
-static void startReadingCCD();
+
 #endif

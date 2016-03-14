@@ -23,7 +23,13 @@ SOFTWARE.
 #ifndef   PWM_H
 #define   PWM_H
 
-void initPWM(void);
+#define PWM_1 1
+#define PWM_2 2
+#define PWM_3 3
+#define PWM_4 4
 
+void initPWM();
+void turnOffPWM();
+void setPWM(uint16_t channel,uint16_t value);
 
 #endif

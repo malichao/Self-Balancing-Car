@@ -29,10 +29,10 @@
 #define DIRECTION_CONTROL_OUT_MAX 5000
 #define DIRECTION_CONTROL_OUT_MIN -5000
 
-#define SPEED_CONTROL_PERIOD 4		//20ms @ 5ms timer ISR
-#define DIRECTION_CONTROL_PERIOD 10	//50ms @ 5ms timer ISR
+#define SPEED_CONTROL_PERIOD 10		//50ms @ 5ms timer ISR
+#define DIRECTION_CONTROL_PERIOD 4	//20ms @ 5ms timer ISR
 
-
+void setTarget(const float speed,const float angle);
 void PIDControl(int16_t *speedL,int16_t *speedR);
 static void balancePID(int16_t *speedL,int16_t *speedR);
 static void speedPID(int16_t *speedL,int16_t *speedR);

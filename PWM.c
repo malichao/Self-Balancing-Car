@@ -68,3 +68,20 @@ void initPWM(){
 
   DDRA = 0XFF;  //PortA for PWM output
 }
+
+void turnOffPWM(){
+  PWMDTY01=0;
+  PWMDTY23=0;
+  PWMDTY67=0; 
+  PWMDTY45=0;
+}
+
+void setPWM(uint16_t channel,uint16_t value){
+  switch(channel){
+    case PWM_1: PWMDTY01=value;break;
+    case PWM_2: PWMDTY23=value;break;
+    case PWM_3: PWMDTY45=value;break;
+    case PWM_4: PWMDTY67=value;break;
+    default:break;
+  }
+}

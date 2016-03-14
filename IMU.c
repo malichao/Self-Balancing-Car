@@ -1,3 +1,25 @@
+/*
+Copyright (c) <2013-2016> <Malcolm Ma>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the "Software"), to deal 
+in the Software without restriction, including without limitation the rights 
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+SOFTWARE.
+*/
+
 #include "IMU.h"
 #inlcude "ADC.h"
 #include "times"
@@ -25,6 +47,11 @@ static float AccSense=800;     //mV
 
 static float gravity=0,gravityG=1,gravityError;
 
+void updateIMU(){
+  getAccGyroValues();
+  calculateAngle();
+}
+
 float getAngle(){
   return angleFinal;
 }
@@ -37,8 +64,37 @@ float getAngularSpeed(int16_t axis){
   return 0;
 }
 
+void AccGyroCalibration() {
+  int16_t samplecounter=0,sampletime=10, sampleSign=1;
+  float tempAccX=0,tempAccY=0,tempAccZ=0;
+  float  tempGyroOffsetZ1=0,tempGyroOffsetZ2=0,tempGyroOffsetX1=0,tempGyroOffsetX2=0;
+  for(;samplecounter<sampletime;samplecounter++) {
+    getAccGyroValues();
+    tempGyroOffsetZ1+=GyroZ1;
+    tempGyroOffsetX1+=GyroX1;
+    tempAccX+=angleAccX;
+    tempAccY+=angleAccY;
+    tempAccZ+=angleAccZ;
+    //Dly_ms(1);
+  }
+  gyroOffset=tempGyroOffsetZ1/sampletime;
+
+  GyroOffsetZ1=tempGyroOffsetZ1/sampletime;
+  GyroOffsetZ2=tempGyroOffsetZ2/sampletime;
+  GyroOffsetX1=tempGyroOffsetX1/sampletime;
+  GyroOffsetX2=tempGyroOffsetX2/sampletime;
+
+  tempAccX/=sampletime;
+  tempAccY/=sampletime;
+  tempAccZ/=sampletime;
+  tempAccX=tempAccX*5/4096*1000/AccSense;
+  tempAccY=tempAccY*5/4096*1000/AccSense;
+  tempAccZ=tempAccZ*5/4096*1000/AccSense;
+  gravityG=sqrt(tempAccX*tempAccX+tempAccY*tempAccY+tempAccZ*tempAccZ);
+}
+
 //Use complementary filter to fuse the acc and gyro data
-void calculateAngle() {
+static void calculateAngle() {
   uint16_t32_t time = micros();
 
   float tempX, tempY, tempZ;
@@ -80,7 +136,7 @@ void calculateAngle() {
 
 
 //Loop unrolled to speed up
-void getAccGyroValues () {
+static void getAccGyroValues() {
     uint16_t32_t timer;
     setADC12bit(); 
     timer=micros();
@@ -121,32 +177,3 @@ void getAccGyroValues () {
     timer=micros()-timer;
 }
 
-void AccGyroCalibration() {
-	int16_t samplecounter=0,sampletime=10, sampleSign=1;
-  float tempAccX=0,tempAccY=0,tempAccZ=0;
-  float  tempGyroOffsetZ1=0,tempGyroOffsetZ2=0,tempGyroOffsetX1=0,tempGyroOffsetX2=0;
-	for(;samplecounter<sampletime;samplecounter++) {
-		getAccGyroValues();
-		tempGyroOffsetZ1+=GyroZ1;
-		tempGyroOffsetX1+=GyroX1;
-		tempAccX+=angleAccX;
-		tempAccY+=angleAccY;
-		tempAccZ+=angleAccZ;
-		//Dly_ms(1);
-	}
-	gyroOffset=tempGyroOffsetZ1/sampletime;
-
-	GyroOffsetZ1=tempGyroOffsetZ1/sampletime;
-	GyroOffsetZ2=tempGyroOffsetZ2/sampletime;
-	GyroOffsetX1=tempGyroOffsetX1/sampletime;
-	GyroOffsetX2=tempGyroOffsetX2/sampletime;
-
-	tempAccX/=sampletime;
-	tempAccY/=sampletime;
-	tempAccZ/=sampletime;
-	tempAccX=tempAccX*5/4096*1000/AccSense;
-	tempAccY=tempAccY*5/4096*1000/AccSense;
-	tempAccZ=tempAccZ*5/4096*1000/AccSense;
-	gravityG=sqrt(tempAccX*tempAccX+tempAccY*tempAccY+tempAccZ*tempAccZ);
-   
-}

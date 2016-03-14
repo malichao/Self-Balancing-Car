@@ -31,11 +31,9 @@ SOFTWARE.
 #include "macros.h"
 #include "ADC.h"
 
-int16_t CCDDebugSwitch = 0;
-int16_t CCDDebugSwitch2 = 2;
+static int16_t CCDDebugSwitch = 0;
+static int16_t CCDDebugSwitch2 = 2;
 
-static int16_t ccdMultiple=1,
-static int16_t CCDBL=3;
 static uint8_t CCDRAW[2][CCD_PIXELS] = { 0 };     //Buffer to store the raw CCD sampling data
 static uint8_t CCDLine[CCD_PIXELS] = { 0 };
 static float thresholdCoef = 0.5;                //0.35
@@ -43,44 +41,22 @@ static uint8_t ObstacleSign=false;
 static int16_t LineCenter = CCD_PIXELS/2;
 static int8_t ReachedEndFlag=false;
 
-static inline void setCLKLow(const uint16_t time){
-  TSL_CLK=LOW;    //Set the clk to low
-  delayUs(time);  //delay for 1us
-}
-static inline void setCLKHigh(const uint16_t time){
-  TSL_CLK=LOW;    //Set the clk to low
-  delayUs(time);  //delay for 1us
-}
 
-/*
- * Before sampling the ADC value of the CCD sensor,we must
- * set the SI signal to inform the CCD sensor to get ready.
- * See datasheet for timing detail.
- */
-static void startReadingCCD(){
-    TSL_SI=LOW;     
-    setCLKLow(1);
-    
-    TSL_SI=HIGH;     
-    delayUs(1);   
-    
-    TSL_SI=LOW;     
-    setCLKHigh(1);
-}
-
-/*
- * Read the CCD sensor.Currently there are at most only two sensors on
- * the car.
- */
-void readCCD(uint16_t num){
-  DisableInterrupts;
-  startReadingCCD();
-  for(int i=0;i<CCD_PIXELS;i++){
-    setCLKLow(1);
-    ADV[num][i]=ADC_Read(num);
-    setCLKHigh(1);
+// Read the CCD sensor.Currently there are at most only two sensors on the car.
+void updateCCD(uint16_t num) {
+  static uint8_t count = 0;
+  count++;
+  if (count % CCD_UPDATE_PERIOD == 0) {
+    DisableInterrupts;
+    startReadingCCD();
+    for (int i = 0; i < CCD_PIXELS; i++) {
+      setCLKLow(1);
+      ADV[num][i] = ADC_Read(num);
+      setCLKHigh(1);
+    }
+    EnableInterrupts;
+    calculateCCD();
   }
-  EnableInterrupts;
 }
 
 int16_t getLineCenter(){
@@ -91,7 +67,32 @@ int8_t reachedEnd(){
   return ReachedEndFlag;
 }
 
-int16_t calculateCCD() {
+static inline void setCLKLow(const uint16_t time) {
+  TSL_CLK = LOW;    //Set the clk to low
+  delayUs(time);  //delay for 1us
+}
+static inline void setCLKHigh(const uint16_t time) {
+  TSL_CLK = LOW;    //Set the clk to low
+  delayUs(time);  //delay for 1us
+}
+
+/*
+ * Before sampling the ADC value of the CCD sensor,we must
+ * set the SI signal to inform the CCD sensor to get ready.
+ * See datasheet for timing detail.
+ */
+static void startReadingCCD() {
+  TSL_SI = LOW;
+  setCLKLow(1);
+
+  TSL_SI = HIGH;
+  delayUs(1);
+
+  TSL_SI = LOW;
+  setCLKHigh(1);
+}
+
+static void calculateCCD() {
   if (CCDDebugSwitch2 == 1) {           //Enable median value filter
     for (int i = 1; i < 127; i++) {
       CCDSendingBuffer[i] = mid(&CCDRAW[0][i - 1]);
@@ -184,5 +185,4 @@ int16_t calculateCCD() {
 
   //Use low pass FIR filter to smooth the change
   LineCenter = FIR(3, LineCenter);
-  return LineCenter;
 }

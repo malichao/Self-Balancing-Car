@@ -39,6 +39,11 @@ static float SpeedP = 32.0;
 static float SpeedI = 0;
 static float SpeedD = 0.0;
 
+void setTarget(const float speed,const float angle){
+  TargetSpeed=speed;
+  BalanceAngle=angle;
+}
+
 void PIDControl(int16_t *speedL,int16_t *speedR){
   static uint8_t periodCount=0;
 
