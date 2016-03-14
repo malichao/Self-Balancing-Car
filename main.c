@@ -139,27 +139,25 @@ long map(long x, long in_min, long in_max, long out_min, long out_max){
 }
 
 void CalculateCCD0 (void) {
-   int tempEdge;
-   if(CCDDebugSwitch2==1) {
-   for(int i=1;i<127;i++){
-    
-    CCDBuf[i]=mid(ADV[0][i-1],ADV[0][i],ADV[0][i+1]);  
-    CCDBuf2[i]=CCDBuf[i]; 
-    } 
-   }
-   else    
-   for(i=0;i<128;i++){
-    
-    CCDBuf[i]=ADV[0][i];  
-    CCDBuf2[i]=ADV[0][i]; 
-   }
-   
-      for(CCDt=0,CCDAvr0=0;CCDt<128;CCDt++) 
-          {
-            CCDAvr0=CCDa+CCDBuf2[CCDt];
-          }  
-      CCDAvr0=CCDAvr0/128;
-      FZ=CCDa*FZBL;
+    int tempEdge;
+    if(CCDDebugSwitch2==1) {           //Enable median value filter
+     for(int i=1;i<127;i++){
+      CCDBuf[i]=mid(&CCDRAW[0][i-1]);
+      CCDBuf2[i]=CCDBuf[i]; 
+      } 
+    }
+    else{    
+     for(i=0;i<128;i++){
+      CCDBuf[i]=CCDRAW[0][i];  
+      CCDBuf2[i]=CCDRAW[0][i]; 
+     }
+    }
+
+    for(CCDt=0,CCDAvr0=0;CCDt<128;CCDt++) {
+      CCDAvr0=CCDa+CCDBuf2[CCDt];
+    }  
+    CCDAvr0=CCDAvr0/128;
+    FZ=CCDa*FZBL;
      
      if(angleFilter2>OriginPoint-10&&angleFilter2<OriginPoint+15) //-74~-49
         if(CCDAvr0<Threshold*2/3)
@@ -257,55 +255,42 @@ void CalculateCCD0 (void) {
 }
   
 
-void Port_Init(void)  //#############################################
-{ 
-  //DDRA=0XFF;  
-  //DDRB = 0XFF;      //原版
-  //PORTB = 0X00;
-  
-  
-  DDRA=0XFF;  
-  DDRB = 0X00;      //测速实验
-  DDRH=0x00;
+void initPort(void){ 
+  DDRA=0XFF;  //PortA for PWM output
+  DDRB=0X00;  //PortB for external counter input
+  DDRH=0x00;  //PortH for detecting swithes
 }
 
 
-
-//IOC7/PT7用于计算右编码器产生的脉冲数
-void BMQ_Init(void)
-{   
+//Initialize the encoder,IOC7 and PT7for generating clk
+void initBMQ(void){   
   TCNT = 0x00;
-  PACTL= 0xC0;//允许PAC
-  TIE  = 0x00;//每一位对应相应通道禁止中断
+  PACTL= 0xC0;  //Enable PAC
+  TIE  = 0x00;  //Disable ISR
   PACNT = 0;
-  BMQR=0;
+  BMQR_RESET=LOW;
 } 
 
+//Since there's only one external counter in the chip so we
+//use another counter to measure the encoder on the left motor
+void getspeed (void) {
+  DisableInterrupts;
+  int tempL,tempR;
+  tempL=PORTB;       //Read the external encoder counter
+  tempR=PACNT;       //Read the internal counter
+  PACNT=0;
+  BMQR_RESET=HIGH;
+  Dly_us(1);
+  BMQR_RESET=HIGH;
 
-void getspeed (void) 
-{
-DisableInterrupts;
-Lspeed=PORTB;
-Rspeed=PACNT;
-PACNT=0;
-BMQR=1;
-Dly_us(1);
-BMQR=0;
-//if(speed<0) 
-  {
-    Lspeed=-Lspeed;
-    Rspeed=-Rspeed;
-  }
-
-  LspeedJF=LspeedJF+Lspeed;
-  RspeedJF=RspeedJF+Rspeed;
+  SpeedL=SpeedL+tempL;
+  SpeedR=SpeedR+tempR;
   EnableInterrupts;
 }
 
 float timer1,time1,timer2,time2,timer3,time3;
 float testGyroZ1=0,testGyroX1=0;
-void getAD (void) 
-{
+void getAD (void) {
     unsigned int tlycs,jiao;
     float temp=0;
     setADC12bit(); 
@@ -548,8 +533,8 @@ void SpeedControl (void)
   static lastErr=0;
 
   
-  CarSpeed = (LspeedJF+RspeedJF) / 2;
-  LspeedJF=RspeedJF=0;
+  CarSpeed = (SpeedL+SpeedR) / 2;
+  SpeedL=SpeedR=0;
   
   CarSpeed*=1.0;
   CarSpeed=FIR(FIRPar[1],CarSpeed);
@@ -715,22 +700,16 @@ void AccGyroCalibration() {
   
 }
 
-int mid(int a,int b,int c) {
-  
- int i,j,t;
- int arr[3];
- arr[0]=a;
- arr[1]=b;
- arr[2]=c;
- for(i=0;i<3;i++)
-  for(j=i+1;j<3;j++)
+//A simple bubble sort to calculate the median value
+int mid(int arr[]) {
+ for(int i=0;i<3;i++)
+  for(int j=i+1;j<3;j++)
    if(arr[i]>arr[j]) {
     t=arr[i];
     arr[i]=arr[j];
     arr[j]=t;
    }
  return arr[1]; 
-  
 }
 
 void CCDCalibration() 
@@ -796,7 +775,7 @@ unsigned char lastSwith,swithChange;
     time3=micros();
     /*DisableInterrupts;
     for(i=0;i<128;i++)
-     CCDBuf[i]=ADV[i];
+     CCDBuf[i]=CCDRAW[i];
     EnableInterrupts;
     SendCCDData(CCDBuf);
     //printout ();
@@ -953,7 +932,7 @@ void interrupt 67 PIT1(void)
    if(CCDTime>=ccdMultiple) {
      CCDTime=0; 
      RD_CCD(0);   
-     ADV[0][0]=ADV[0][1];//adv[0][0] is a bad point
+     CCDRAW[0][0]=CCDRAW[0][1];//CCDRAW[0][0] is a bad point
      CalculateCCD0();
    
    }

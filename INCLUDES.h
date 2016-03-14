@@ -35,10 +35,11 @@ SOFTWARE.
 #define PI 3.14159265358979323846 
 #define true 1
 #define false 0
-
+#define HIGH 1
+#define LOW 0
 
 //Definition of IO pins
-#define BMQR  PORTA_PA4  		//Encoder Reset
+#define BMQR_RESET  PORTA_PA4  		//Encoder Reset
 #define TSL_SI  PORTA_PA1    	//CCD sensor pin SI
 #define TSL_CLK PORTA_PA0    	//CCD sensor pin CLK 
 #define TSL_SI1  PORTA_PA3    	//CCD sensor pin SI
@@ -126,13 +127,13 @@ int SpeedControlCount = 0;
 int SpeedControlPeriod = 0;
 int scPeriod=10;  
 int ControlFlag=0;
-int Lspeed,Rspeed,LspeedJF,RspeedJF;
+int SpeedL=0,SpeedR=0;
 
 //============= Definition and parameters of Linear CCD Sensor==============
 int CCDTime=0;
 int ccdMultiple=1,
 int CCDBL=3;
-unsigned char ADV[2][128]={0};     //声明数组，用于存放采集的线性数值 
+unsigned char CCDRAW[2][128]={0};     //Buffer to store the raw CCD sampling data
 unsigned char CCDLine[128]={0};
 int CCDDebugSwitch=0;
 int CCDDebugSwitch2=2;
@@ -141,8 +142,7 @@ float FZBL1=0.6;
 int CCDt;
 long CCDa;
 #define DCCD 8
-int FZ,CCDAvr,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
-int FZ1,CCDAvr1,Rblack1,LastRblack1,Lblack1,LastLblack1,LineCenter1=64;
+int FZ,CCDAvr0,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
 int LastC1=64,LastC2=64,LastC3=64;;
 int trackWidth=73; 
 float sWeight=0.6;
