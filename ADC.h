@@ -25,7 +25,7 @@ SOFTWARE.
 
 
 void initADC(void);
-uint readADC(uchar channel);
+uint readADC(unsigned char channel);
 void setADC8bit();
 void setADC12bit();
 
