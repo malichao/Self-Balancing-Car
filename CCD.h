@@ -28,9 +28,11 @@ SOFTWARE.
 #define CCD_PIXELS 128
 #define STEP 5
 
+void readCCD(uint16_t num);
+void calculateCCD();
+int16_t getLineCenter();
+int8_t reachedEnd();
 static inline void setCLKLow(const uint16_t time);
 static inline void setCLKHigh(const uint16_t time);
 static void startReadingCCD();
-int16_t calculateCCD();
-
 #endif

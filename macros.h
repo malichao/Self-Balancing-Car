@@ -65,6 +65,6 @@ SOFTWARE.
 //=== Definition of Linear CCD Sensor === 
 #define DCCD 8
 
-
+float MMperPulse = 0.14165, PulseperMM = 7.05965;
 
 #endif

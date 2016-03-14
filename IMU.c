@@ -5,24 +5,29 @@
 #include "filters"
 
 //============= Definition and parameters of gyros and Accelerometers=============
-float GyroZ1=0,GyroX1=0;
-float angleAccZ=0;
-float angleAccX=0;
-float angleAccY=0;
+static float GyroZ1=0,GyroX1=0;
+static float angleAccZ=0;
+static float angleAccX=0;
+static float angleAccY=0;
+static float angleFinal;
 
 //Four gyros: Z1 and Z2 for pitch angle,X1 and X2 for yaw angle 
-float GyroOffsetZ1=1950;      //Gyro offset value,set larger to tilt forward
-float GyroOffsetZ2=1950;
-float GyroOffsetX1=1950;
-float GyroOffsetX2=1950;
-float GyroCoef=0.536;               //Gyro coefficient,see datasheet for detail     
-float AccOffset= 1365;               //Accelerometers offset value,set larger to tilt forward
+static float GyroOffsetZ1=1950;      //Gyro offset value,set larger to tilt forward
+static float GyroOffsetZ2=1950;
+static float GyroOffsetX1=1950;
+static float GyroOffsetX2=1950;
+static float GyroCoef=0.536;               //Gyro coefficient,see datasheet for detail     
+static float AccOffset= 1365;               //Accelerometers offset value,set larger to tilt forward
 
 //The follow values come from the datasheet
-float GyroSense=0.67;
-float AccSense=800;     //mV
+static float GyroSense=0.67;
+static float AccSense=800;     //mV
 
-float gravity=0,gravityG=1,gravityError;
+static float gravity=0,gravityG=1,gravityError;
+
+float getAngle(){
+  return angleFinal;
+}
 
 //Use complementary filter to fuse the acc and gyro data
 void calculateAngle() {
@@ -63,7 +68,7 @@ void calculateAngle() {
     angleFinal=angleAcc*(1-weight)+(angleGyroDelta+angleFinal)*weight;
 }
 
-//Loop unrolling to speed up
+//Loop unrolled to speed up
 void getAccGyroValues () {
     uint16_t32_t timer;
     setADC12bit(); 

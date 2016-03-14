@@ -24,6 +24,9 @@ SOFTWARE.
 #include <hidef.h>           /* common defines and macros */
 #include "derivative.h"      /* derivative-specific definitions */
 
+static uint32_t TimeMs=0;
+static uint32_t TimeMsMod=0;
+static uint32_t TimeUs=0;
 
 void setBuscClock80MHz(){       
   CLKSEL = 0X00;            //disengage PLL to system

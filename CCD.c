@@ -31,15 +31,17 @@ SOFTWARE.
 #include "macros.h"
 #include "ADC.h"
 
-//============= Definition and parameters of Linear CCD Sensor==============
-int16_t ccdMultiple=1,
-int16_t CCDBL=3;
-uint8_t CCDRAW[2][CCD_PIXELS] = { 0 };     //Buffer to store the raw CCD sampling data
-uint8_t CCDLine[CCD_PIXELS] = { 0 };
 int16_t CCDDebugSwitch = 0;
 int16_t CCDDebugSwitch2 = 2;
-float thresholdCoef = 0.5;                //0.35
-uint8_t ObstacleSign=false;
+
+static int16_t ccdMultiple=1,
+static int16_t CCDBL=3;
+static uint8_t CCDRAW[2][CCD_PIXELS] = { 0 };     //Buffer to store the raw CCD sampling data
+static uint8_t CCDLine[CCD_PIXELS] = { 0 };
+static float thresholdCoef = 0.5;                //0.35
+static uint8_t ObstacleSign=false;
+static int16_t LineCenter = CCD_PIXELS/2;
+static int8_t ReachedEndFlag=false;
 
 static inline void setCLKLow(const uint16_t time){
   TSL_CLK=LOW;    //Set the clk to low
@@ -79,6 +81,14 @@ void readCCD(uint16_t num){
     setCLKHigh(1);
   }
   EnableInterrupts;
+}
+
+int16_t getLineCenter(){
+  return LineCenter;
+}
+
+int8_t reachedEnd(){
+  return ReachedEndFlag;
 }
 
 int16_t calculateCCD() {
@@ -124,14 +134,13 @@ int16_t calculateCCD() {
   //After knowing the number of edges,we now determine if the car reaches the end line.
   //
   if (edgeCount > 5 && (millis() - startTime) > 10000) {
-    ReachedEnd = true;
+    ReachedEndFlag = true;
   }
 
   //Now calculating the center line,the basic method is to measure the left and right
   //edge and then divide by two.So first we search for the black line to the left and right.
   int16_t blackLineR, blackLineL;
-  int16_t lineCenter = CCD_PIXELS/2;
-  for (int16_t i = lineCenter; i + STEP < CCD_PIXELS; i++) {     //Finds the black line to the righ
+  for (int16_t i = LineCenter; i + STEP < CCD_PIXELS; i++) {     //Finds the black line to the righ
     if (CCDData[i] - CCDData[i + STEP] > threshold) {
       blackLineR = i + STEP;                              //Found it
       //Set the right part of the black line to all black
@@ -141,7 +150,7 @@ int16_t calculateCCD() {
       break;
     }
   }
-  for (int16_t i = lineCenter; i - STEP >= 0; i--) {          //Finds the black line to the left
+  for (int16_t i = LineCenter; i - STEP >= 0; i--) {          //Finds the black line to the left
     if (CCDData[i] - CCDData[i - STEP] > threshold) {
       blackLineL = i - STEP;                              //Found it
       //Set the left part of the black line to all black
@@ -161,19 +170,19 @@ int16_t calculateCCD() {
   //If only left side is detected then we use the track width information
   //to calculate the center line.Same as when there's only right line.
   if (blackLineL > 50)
-    lineCenter = blackLineL + trackWidth / 2;
+    LineCenter = blackLineL + trackWidth / 2;
   else if (blackLineR < 78)
-    lineCenter = blackLineR - trackWidth / 2;
+    LineCenter = blackLineR - trackWidth / 2;
   else
-    lineCenter = (blackLineL + blackLineR) / 2;
+    LineCenter = (blackLineL + blackLineR) / 2;
 
   //Constrain the result
-  if (lineCenter + STEP > CCD_PIXELS)
-    lineCenter = CCD_PIXELS;
-  else if (lineCenter < STEP)
-    lineCenter = STEP;
+  if (LineCenter + STEP > CCD_PIXELS)
+    LineCenter = CCD_PIXELS;
+  else if (LineCenter < STEP)
+    LineCenter = STEP;
 
   //Use low pass FIR filter to smooth the change
-  lineCenter = FIR(3, lineCenter);
-  return lineCenter;
+  LineCenter = FIR(3, LineCenter);
+  return LineCenter;
 }

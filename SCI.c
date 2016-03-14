@@ -27,9 +27,9 @@ SOFTWARE.
 #include "SCI.h"
 
 
-int16_t rxBufferHead = 0;
-int16_t rxBufferTail = 0;
-int16_t rx_buffer[RX_BUFFER_SIZE]={0};
+static int16_t rxBufferHead = 0;
+static int16_t rxBufferTail = 0;
+static int16_t RXBuffer[RX_BUFFER_SIZE]={0};
 
 
 void initUART0(void){
@@ -71,7 +71,7 @@ int8_t readUART0(){
   if (rxBufferHead == rxBufferTail) {
     return SERIAL_NO_DATA;
   } else {
-    data = rx_buffer[rxBufferTail];
+    data = RXBuffer[rxBufferTail];
     rxBufferTail++;
     if (rxBufferTail == RX_BUFFER_SIZE) { rxBufferTail = 0; }
     return data;
@@ -92,7 +92,7 @@ int16_terrupt 20 void SCI_RX_IRS(void){
     nextHead = 0; 
  }
   if (nextHead != rxBufferTail) {   //If buffer is empty then put it in
-    rx_buffer[rxBufferHead] = RxData;
+    RXBuffer[rxBufferHead] = RxData;
     rxBufferHead = nextHead;  
   }
   Enableint16_terrupts;

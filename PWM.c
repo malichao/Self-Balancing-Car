@@ -66,4 +66,5 @@ void initPWM(){
   PWMDTY67 = 0;   
   PWME_PWME7 = 1; 
 
+  DDRA = 0XFF;  //PortA for PWM output
 }

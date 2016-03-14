@@ -28,10 +28,6 @@ SOFTWARE.
 #define TIMER0_COUNT 54321	
 #define TIMER1_COUNT 5000
 
-static uint32_t TimeMs=0;
-static uint32_t TimeMsMod=0;
-static uint32_t TimeUs=0;
-
 void setBuscClock80MHz();
 void delayUs(uint16_t);
 void delayMs(uint16_t);

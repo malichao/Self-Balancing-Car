@@ -25,6 +25,15 @@ SOFTWARE.
 #include "PWM.h"
 #include "motor.h"
 
+ //Testing values of encoder R=1139 1119 1120.5  1121  L= 1118.5 1105 1119   avr=1120
+ //Wheel diameter 50.5mm  perimeter=158.65mm
+ //MMperPulse=158.65/1120=0.14165
+ //PulseperMM=7.05965
+static int16_t OutputLeft, OutputRight;
+static int16_t MotorOffestL = 1900;          //Left Motor PWM output offset
+static int16_t MotorOffestR = 1800;          //Right Motor PWM output offset
+static int8_t MotorEnable=true;
+
 //Initialize the encoder,IOC7 and PT7for generating clk
 void initBMQ(){   
   TCNT = 0x00;
@@ -32,6 +41,7 @@ void initBMQ(){
   TIE  = 0x00;  //Disable ISR
   PACNT = 0;
   BMQR_RESET=LOW;
+  DDRB = 0X00;  //PortB for external counter input
 } 
 
 //Since there's only one external counter in the chip so we
@@ -51,6 +61,11 @@ void getSpeed(){
   EnableInterrupts;
 }
 
+void setSpeed(float myspeed) {
+  SetSpeed = myspeed * PulseperMM * scPeriod * 5 / 1000;
+  SetSpeed = 0;
+}
+
 void shutDown() {
     MotorEnable=false;
     PWMDTY01=0;
@@ -63,45 +78,36 @@ void turnOn(){
    MotorEnable=true;
 }
 
-void calculateSpeedOutput() { //SpeedOutCalculate
-  int16_t i;
-  float temp=0;
-  speed=Output-SpeedControlOut;
-  
-  //DirectionControlOut=0;//for ccd test only
-  LOUT=-(speed+DirectionControlOut);
-  ROUT=-(speed-DirectionControlOut);
-}
 
 void speedOut(){   //speedout
   if(!MotorEnable)
   return;
 
- if(fabs(Setpoint-angleFilter2)>45) {
-  LOUT=0;
-  ROUT=0;
+ if(fabs(getAngle())>MAX_ANGLE) {
+  OutputLeft=0;
+  OutputRight=0;
  }
  
- if(LOUT==0){
+ if(OutputLeft==0){
     PWMDTY01=0;
     PWMDTY23=0;  
   } 
-  else if(LOUT>0){ 
+  else if(OutputLeft>0){ 
     PWMDTY01=0;
-    PWMDTY23=LOUT+MotorOffestL;
-  } else if(LOUT<0) { 
+    PWMDTY23=OutputLeft+MotorOffestL;
+  } else if(OutputLeft<0) { 
     PWMDTY23=0;
-    PWMDTY01=MotorOffestL-LOUT;
+    PWMDTY01=MotorOffestL-OutputLeft;
     }
 
-  if(ROUT==0) {
+  if(OutputRight==0) {
     PWMDTY67=0; 
     PWMDTY45=0;
-  } else if(ROUT>0) {
-    PWMDTY45=ROUT+MotorOffestR;  
+  } else if(OutputRight>0) {
+    PWMDTY45=OutputRight+MotorOffestR;  
     PWMDTY67=0;
-  }else if(ROUT<0){
+  }else if(OutputRight<0){
     PWMDTY45=0; 
-    PWMDTY67=MotorOffestR-ROUT;
+    PWMDTY67=MotorOffestR-OutputRight;
   }
 }
