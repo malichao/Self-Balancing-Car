@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -20,14 +20,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+
+//========== Note: Why putting all the global values here in the header? ========
+//It's not a good practice to put all the local/global variables in the header file
+//but this is a special case.The freescale debugger(BDM) I use didn't support reading
+//the variables defined in a function for some reason.But there are a lots of parameters
+//need to be tuned at runtime to get the optimal performance.So I put all the variables
+//here in the header files.
+
+
 #ifndef INCLUDES_H
 #define INCLUDES_H
 
 #define PI 3.14159265358979323846 
-
-
 #define true 1
 #define false 0
+
+//Definition of gyros
 #define gyroPin_Z1 5
 #define gyroPin_Z2 7
 #define gyroPin_X1 6
@@ -39,22 +48,21 @@ float gyroOffset=121;
 float gyroZ,accX,accY,accZ;
 float angleG=0;
 
-//端口定义
-#define FLED  PORTK_PK0
-#define BMQR  PORTA_PA4  //编码器复位
-#define TSL_SI  PORTA_PA1    //定义线性传感器的端口 SI
-#define TSL_CLK PORTA_PA0    //定义线性传感器的端口 CLK 
-#define TSL_SI1  PORTA_PA3    //定义线性传感器的端口 SI
-#define TSL_CLK1 PORTA_PA2    //定义线性传感器的端口 CLK 
+//Definition of IO pins
+#define BMQR  PORTA_PA4  		//Encoder Reset
+#define TSL_SI  PORTA_PA1    	//CCD sensor pin SI
+#define TSL_CLK PORTA_PA0    	//CCD sensor pin CLK 
+#define TSL_SI1  PORTA_PA3    	//CCD sensor pin SI
+#define TSL_CLK1 PORTA_PA2    	//CCD sensor pin CLK 
 
-//控制参数
-#define PRINT_AD        (1)       //设置串口打印数据类型，0:打印二值化数据，1：打印AD值
-#define THRESHOLD       (100)     //设置二值化阈值
-#define WINDOW_WIDTH    (128)     //设置串口打印的像素个数，最大128，最小0
+//CCD debugging settings
+#define PRINT_AD   					//toggle if print the ADC values or binarized values
+#define CCD_THRESHOLD 100    	//binarization threshold
+#define WINDOW_WIDTH 128     //Set how many pixels to print 0~128
 
-//直立控制
-float TLYLDZ1=1950;
-float TLYLDZ2=1950;
+//Balancing control parameters
+float GyroOffsetZ1=1950;
+float GyroOffsetZ2=1950;
 float TLYLDX1=1950;
 float TLYLDX2=1950;
 //#define TLYLD 1950           //陀螺仪零点，前倾则增加

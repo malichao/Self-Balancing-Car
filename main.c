@@ -864,7 +864,7 @@ unsigned char lastSwith,swithChange;
   PWM_Init();        
   BMQ_Init(); 
   UART0_Init();
-  ADC_Init0();
+  ADC_Init();
   setADC12bit();
   PIT_Init();
   EnableInterrupts;
