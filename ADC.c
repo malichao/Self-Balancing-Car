@@ -47,12 +47,10 @@ void initADC(){
 
 void setADC8bit() {
   ATD0CTL1 = 0b00001111; 
-  
 }
 
 void setADC12bit() {
   ATD0CTL1 = 0X4F; 
-  
 }
 
 int16_t readADC(uint8_t Channel){  

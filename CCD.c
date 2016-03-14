@@ -25,14 +25,21 @@ SOFTWARE.
  * Note:This file is stripped from main.c to make it more readable,there might
  * be some definition problem and won't pass the compliler.
  * */
-
-#include "times"
 #include <hidef.h>             /* common defines and macros */
 #include "derivative.h"        /* derivative-specific definitions */
+#include "times"
 #include "macros.h"
 #include "ADC.h"
 
-
+//============= Definition and parameters of Linear CCD Sensor==============
+int16_t ccdMultiple=1,
+int16_t CCDBL=3;
+uint8_t CCDRAW[2][CCD_PIXELS] = { 0 };     //Buffer to store the raw CCD sampling data
+uint8_t CCDLine[CCD_PIXELS] = { 0 };
+int16_t CCDDebugSwitch = 0;
+int16_t CCDDebugSwitch2 = 2;
+float thresholdCoef = 0.5;                //0.35
+uint8_t ObstacleSign=false;
 
 static inline void setCLKLow(const uint16_t time){
   TSL_CLK=LOW;    //Set the clk to low
@@ -66,7 +73,7 @@ static void startReadingCCD(){
 void readCCD(uint16_t num){
   DisableInterrupts;
   startReadingCCD();
-  for(int i=0;i<128;i++){
+  for(int i=0;i<CCD_PIXELS;i++){
     setCLKLow(1);
     ADV[num][i]=ADC_Read(num);
     setCLKHigh(1);
@@ -74,98 +81,99 @@ void readCCD(uint16_t num){
   EnableInterrupts;
 }
 
-void calculateCCD(){
-    int tempEdge;
-    if(CCDDebugSwitch2==1) {           //Enable median value filter
-     for(int i=1;i<127;i++){
-      CCDBuf[i]=mid(&CCDRAW[0][i-1]);
-      CCDBuf2[i]=CCDBuf[i]; 
-      } 
+int16_t calculateCCD() {
+  if (CCDDebugSwitch2 == 1) {           //Enable median value filter
+    for (int i = 1; i < 127; i++) {
+      CCDSendingBuffer[i] = mid(&CCDRAW[0][i - 1]);
+      CCDData[i] = CCDSendingBuffer[i];
     }
-    else{    
-     for(i=0;i<128;i++){
-      CCDBuf[i]=CCDRAW[0][i];  
-      CCDBuf2[i]=CCDRAW[0][i]; 
-     }
+  } else {
+    for (int i = 0; i < CCD_PIXELS; i++) {
+      CCDSendingBuffer[i] = CCDRAW[0][i];
+      CCDData[i] = CCDRAW[0][i];
     }
-
-    for(CCDt=0,CCDAvr0=0;CCDt<128;CCDt++) {
-      CCDAvr0=CCDa+CCDBuf2[CCDt];
-    }  
-    CCDAvr0=CCDAvr0/128;
-    FZ=CCDa*FZBL;
-     
-     if(angleFilter2>OriginPoint-10&&angleFilter2<OriginPoint+15) //-74~-49
-        if(CCDAvr0<Threshold*2/3)
-           obstacleSign=true;
-       
-       for(CCDt=0,tempEdge=128,CCDEdge=0;CCDt+DCCD<128;CCDt++){
-         if(abs(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD])>FZ){
-            if(abs(tempEdge-CCDt)>DCCD*2) {
-              tempEdge=CCDt;
-              edge[CCDEdge]=CCDt;
-              CCDEdge++;
-            }
-          }
-       }
-      if(CCDEdge>5&&(millis()-scratchLineTimer)>10000) {
-        scratchLineCount++;
-        scratchLine=true;
-      }
-      
-      for(CCDt=LineCenter;CCDt+DCCD<128;CCDt++){  //Rblack
-        if(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD]>FZ){
-          Rblack=CCDt+DCCD;
-          for(CCDt=Rblack;CCDt<128;CCDt++){
-            CCDBuf2[CCDt]=2;
-          }  
-        }
-      }
-    for(CCDt=LineCenter;CCDt-DCCD>=0;CCDt--){   //Lblack
-          if(CCDBuf2[CCDt]-CCDBuf2[CCDt-DCCD]>FZ) {
-            Lblack=CCDt-DCCD;
-            for(CCDt=Lblack;CCDt>=0;CCDt--){
-              CCDBuf2[CCDt]=2;
-            }  
-          }
-        }
-        
-    if(Lblack>5&&Rblack<123)
-     trackWidth=Rblack-Lblack;
-    
-    if(Lblack>50)
-     LineCenter=Lblack+trackWidth/2;
-    else if(Rblack<78)
-     LineCenter=Rblack-trackWidth/2;
-    else
-     LineCenter=(Lblack+Rblack)/2; 
-    
-    
-    if(LineCenter+DCCD>125)
-      LineCenter=125;
-    else if(LineCenter<5)
-      LineCenter=5;
-    LastC1=LineCenter;
-
-    LastC3=LastC2;
-    LastC2=LastC1;
-
-    
-    LineCenter=FIR(FIRPar[3],LineCenter);
-}
-
-void CCDCalibration(){
-  //There are actually two cameras on the car for experiment,
-  //in this code,only one is used.
-  RD_CCD(0);
-  for(int16_t i=0;i<10;i++) {
-    //Delay some time between two sampling
-      Dly_ms(ccdMultiple*5-1);
-      RD_CCD(0);
-      CalculateCCD0();
-      Threshold+=CCDAvr0;
   }
-  //Calculate the average value
-  Threshold/=10;
-  obstacleSign=false;
+
+  int16_t averageValue = 0;
+  int16_t threshold;
+  
+  //Calculate average value
+  for (int i = 0; i < CCD_PIXELS; i++) {     
+    averageValue += CCDData[i];
+  }
+  averageValue = averageValue / CCD_PIXELS;
+  threshold = averageValue * thresholdCoef;
+
+  //Determin if there is an obstacle ahead.An obstacle is a black stripe.
+  if (angleFinal > OriginPoint - 10 && angleFinal < OriginPoint + 15) //-74~-49
+    if (averageValue < Threshold * 2 / 3)
+      ObstacleSign = true;
+
+  //Now count how many edges are detected,we use the number of edges to determin
+  //if the car has reach the end line.
+  int16_t edgeCount=0;
+  int16_t tempEdge;
+  for (int16_t i = 0, tempEdge = CCD_PIXELS; i + STEP < CCD_PIXELS; i++) {
+    if (abs(CCDData[i] - CCDData[i + STEP]) > threshold) {
+      if (abs(tempEdge - i) > STEP * 2) {
+        tempEdge = i;
+        edgeCount++;
+      }
+    }
+  }
+  //After knowing the number of edges,we now determine if the car reaches the end line.
+  //
+  if (edgeCount > 5 && (millis() - startTime) > 10000) {
+    ReachedEnd = true;
+  }
+
+  //Now calculating the center line,the basic method is to measure the left and right
+  //edge and then divide by two.So first we search for the black line to the left and right.
+  int16_t blackLineR, blackLineL;
+  int16_t lineCenter = CCD_PIXELS/2;
+  for (int16_t i = lineCenter; i + STEP < CCD_PIXELS; i++) {     //Finds the black line to the righ
+    if (CCDData[i] - CCDData[i + STEP] > threshold) {
+      blackLineR = i + STEP;                              //Found it
+      //Set the right part of the black line to all black
+      for (i = blackLineR; i < CCD_PIXELS; i++) {            
+        CCDData[i] = 0;
+      }
+      break;
+    }
+  }
+  for (int16_t i = lineCenter; i - STEP >= 0; i--) {          //Finds the black line to the left
+    if (CCDData[i] - CCDData[i - STEP] > threshold) {
+      blackLineL = i - STEP;                              //Found it
+      //Set the left part of the black line to all black
+      for (i = blackLineL; i >= 0; i--) {
+        CCDData[i] = 0;
+      }
+      break
+    }
+  }
+
+  //Calculate the width of the race track,the predicate is to ensure that
+  //we only update the track width data only if the car detects black lines
+  //on both side.
+  if (blackLineL > STEP && blackLineR < CCD_PIXELS-STEP)
+    trackWidth = blackLineR - blackLineL;
+
+  //If only left side is detected then we use the track width information
+  //to calculate the center line.Same as when there's only right line.
+  if (blackLineL > 50)
+    lineCenter = blackLineL + trackWidth / 2;
+  else if (blackLineR < 78)
+    lineCenter = blackLineR - trackWidth / 2;
+  else
+    lineCenter = (blackLineL + blackLineR) / 2;
+
+  //Constrain the result
+  if (lineCenter + STEP > CCD_PIXELS)
+    lineCenter = CCD_PIXELS;
+  else if (lineCenter < STEP)
+    lineCenter = STEP;
+
+  //Use low pass FIR filter to smooth the change
+  lineCenter = FIR(3, lineCenter);
+  return lineCenter;
 }

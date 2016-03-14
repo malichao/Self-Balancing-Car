@@ -25,10 +25,12 @@ SOFTWARE.
 
 #define CCD0 0
 #define CCD1 1
+#define CCD_PIXELS 128
+#define STEP 5
 
 static inline void setCLKLow(const uint16_t time);
 static inline void setCLKHigh(const uint16_t time);
 static void startReadingCCD();
-void calculateCCD();
+int16_t calculateCCD();
 
 #endif
