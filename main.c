@@ -37,9 +37,9 @@ Some development notes:
 -Add track width calculation during running
 
 function execution time:
-CCD       | 8bit sampling         | 572us
-Acc and Gyro  | sampling and computation  | 784us
-PID controller  |               | 208us
+CCD             | 8bit sampling             | 572us
+Acc and Gyro    | sampling and computation  | 784us
+PID controller  |                           | 208us
 
 some good settings: 
 40cm foresight view @ 68бу,38m-31.5s,stable
