@@ -25,7 +25,7 @@ SOFTWARE.
 #include "derivative.h"      /* derivative-specific definitions */
 
 
-void setBuscClock80MHz(void){       
+void setBuscClock80MHz(){       
   CLKSEL = 0X00;            //disengage PLL to system
   PLLCTL_PLLON = 1;         //turn on PLL
   SYNR = 0xc0 | 0x09;                        
@@ -38,16 +38,16 @@ void setBuscClock80MHz(void){
 }
 
 //Delay 1ms
-void delayMs(unsigned int ms){
-   for(unsigned int i=0;i<ms;i++){
+void delayMs(uint16_t ms){
+   for(uint16_t i=0;i<ms;i++){
     delayUs(1000);
    }
 }
 
 //Use loop unrolling to reduce for statement overhead and achieve
 //precise timming.
-void delayUs(unsigned int us){   
-   for(unsigned int i=0;i<us;i++){ 
+void delayUs(uint16_t us){   
+   for(uint16_t i=0;i<us;i++){ 
 #ifdef BUSCLOCK32M
       _asm(nop);_asm(nop);_asm(nop);_asm(nop);
       _asm(nop);_asm(nop);_asm(nop);_asm(nop);
@@ -107,7 +107,7 @@ void delayUs(unsigned int us){
 } 
 
 
-void initPIT(void) {
+void initPIT() {
   PITCFLMT_PITE = 0;            //Turn off timer 
   PITCE_PCE0 = 1;               //Enable timer 0
   PITMTLD0 = 80 - 1;            //Set timer count value,80 = 1us @80MHz
@@ -121,13 +121,13 @@ void initPIT(void) {
 }
 
 //Profiling function,read the time in micros
-unsigned long micros() { 
+uint32_t micros() { 
   return TimeUs+(TIMER0_COUNT-PITCNT0);
 }
 
 //Profiling function,read the time in millis
-unsigned long millis() {
-  unsigned long time=micros();
+uint32_t millis() {
+  uint32_t time=micros();
   if(time>500)
     return (TIMER0_COUNT-PITCNT0)/1000+TimeMS+1;
   return (TIMER0_COUNT-PITCNT0)/1000+TimeMS;
@@ -135,7 +135,7 @@ unsigned long millis() {
 
 //Timer ISR
 #pragma CODE_SEG __NEAR_SEG NON_BANKED
-void interrupt 66 PIT0(void){
+void interrupt 66 PIT0(){
   PITTF_PTF0 = 1;       //clear interrupts flag
   TimeMSMod+=TIMER0_COUNT%1000;
   if(TimeMSMod>=1000){

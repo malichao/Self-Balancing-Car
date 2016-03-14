@@ -27,49 +27,47 @@ SOFTWARE.
 #include "SCI.h"
 
 
-int rxBufferHead = 0;
-int rxBufferTail = 0;
-char rx_buffer[RX_BUFFER_SIZE]={0};
+int16_t rxBufferHead = 0;
+int16_t rxBufferTail = 0;
+int16_t rx_buffer[RX_BUFFER_SIZE]={0};
 
 
 void initUART0(void){
   SCI0CR1 = 0x00; 
   SCI0CR2 = 0x2C;     //enable RX ISR
-  SCI0BD  = 130;       //521--9600
-  //SCI0BD  = 130;     //set buadrate to 38400 @ fbus=80M
-                      //When IREN = 0 then 
-                      //SCI baud rate = SCI bus clock / (16 x SBR[12:0])
+  SCI0BD  = 130;       //set buadrate to 38400 @ fbus=80M
+  //SCI0BD  = 130;     
 }
 
 //Send a char through UART0,sending character is using polling mode
 //since sending values are not as important as other tasks and it should
 //give its priority to other tasks.
-void putchar(unsigned char ch){
+void putchar(uint8_t ch){
   while(!(SCI0SR1&0x80)) ; 		    //Simple polling mode
   SCI0DRL=ch;	
 }
 
 //Send a string through the UART0,this function calls the putchar function 
 //to do the job.
-void putstr(unsigned char ch[]){
-  int i=0;
+void putstr(uint8_t ch[]){
+  int16_t i=0;
   while(ch[i]){
-      uart0_putchar((unsigned char)ch[i++]);
+      putchar((uint8_t)ch[i++]);
   }      
 }
 
-//A function to print float type through UART,the function calls the built-in
-//far_sprintf to convert the number.
+//A function to print16_t float type through UART,the function calls the built-in
+//far_sprint16_tf to convert the number.
 void putf(float num){
-  unsigned char buf[20]={0};
-  (void)far_sprintf(buf,"%.3f,",num);
-  uart0_putstr(buf);
+  uint8_t buf[20]={0};
+  (void)far_sprint16_tf(buf,"%.3f,",num);
+  putstr(buf);
 }
 
 //Read the data from RX buffer,which is a cyclic array.It returns 0 if the buffer
 //is empty.And it stop receiving if the buffer is full.
-char readUART0(){
-  char data  ;
+int8_t readUART0(){
+  int8_t data  ;
   if (rxBufferHead == rxBufferTail) {
     return SERIAL_NO_DATA;
   } else {
@@ -82,10 +80,10 @@ char readUART0(){
 
 //RX ISR
 #pragma CODE_SEG NON_BANKED
-interrupt 20 void SCI_RX_IRS(void){
-  unsigned char rxData;
-  unsigned char nextHead;
-  DisableInterrupts;
+int16_terrupt 20 void SCI_RX_IRS(void){
+  uint8_t rxData;
+  uint8_t nextHead;
+  Disableint16_terrupts;
 
   rxData=(byte)SCI0DRL;             //Read the RX value in register
 
@@ -97,5 +95,5 @@ interrupt 20 void SCI_RX_IRS(void){
     rx_buffer[rxBufferHead] = RxData;
     rxBufferHead = nextHead;  
   }
-  EnableInterrupts;
+  Enableint16_terrupts;
 }  

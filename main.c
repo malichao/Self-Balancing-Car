@@ -1,7 +1,7 @@
 /*
 Copyright (c) <2013-2016> <Malcolm Ma>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy 
+Permission is hereby granted, free of int8_tge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
 in the Software without restriction, including without limitation the rights 
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
@@ -86,9 +86,10 @@ P=36 SetSpeedMM=1800
 #include "PWM.h"
 #include "macros.h"
 #include "filters.h"
+#include <IMU.h>
 
 //CCD debugging settings
-char debug=1;
+int8_t debug=1;
 float timer1,time1,timer2,time2,timer3,time3; //Some timer profiler to speed up the code
 
 //============= Definition and parameters of gyros and Accelerometers=============
@@ -106,7 +107,7 @@ float KP=700.0;
 float KD=20.5;  
 float Tg =2.0;
 float kjifen=150.0;
-int    AccOffset=1365;
+
 float AngleAZ=0;
 float AngleAX=0;
 float AngleAY=0;
@@ -115,7 +116,7 @@ float AngleFilter=0;
 float gyro,Aangle;
 float gyro,angle,jifen; 
 //Balancing control parameters
-unsigned long gyroTimer=0;
+uint32_t gyroTimer=0;
 float weightFlag=0;
 float GyroSense=0.01;
 float GyroSense2=0.67;
@@ -135,9 +136,9 @@ float val_kp,val_kd;
 float SpeedControlP=32.0;
 float SpeedControlI=0;
 float SpeedControlD=0.0;
-int MotorOffestL=1900;          //Left Motor PWM output offset
-int MotorOffestR=1800;          //Right Motor PWM output offset
-int CAR_SPEED_SET =0;
+int16_t MotorOffestL=1900;          //Left Motor PWM output offset
+int16_t MotorOffestR=1800;          //Right Motor PWM output offset
+int16_t CAR_SPEED_SET =0;
 float MMperPulse=0.14165,PulseperMM=7.05965;
 float SetSpeed=0,SetSpeedMM=-1350,fspeed,sp=1,si=0;
 float CarSpeed;
@@ -145,44 +146,44 @@ float SpeedControlIntegral=0,
 float SpeedControlOutOld=0,
 float SpeedControlOutNew=0,
 float SpeedControlOut=0;
-int SpeedControlCount = 0;
-int SpeedControlPeriod = 0;
-int scPeriod=10;  
-int ControlFlag=0;
-int SpeedL=0,SpeedR=0;
+int16_t SpeedControlCount = 0;
+int16_t SpeedControlPeriod = 0;
+int16_t scPeriod=10;  
+int16_t ControlFlag=0;
+int16_t SpeedL=0,SpeedR=0;
 
 //============= Definition and parameters of Linear CCD Sensor==============
-int CCDTime=0;
-int ccdMultiple=1,
-int CCDBL=3;
-unsigned char CCDRAW[2][128]={0};     //Buffer to store the raw CCD sampling data
-unsigned char CCDLine[128]={0};
-int CCDDebugSwitch=0;
-int CCDDebugSwitch2=2;
+int16_t CCDTime=0;
+int16_t ccdMultiple=1,
+int16_t CCDBL=3;
+uint8_t CCDRAW[2][128]={0};     //Buffer to store the raw CCD sampling data
+uint8_t CCDLine[128]={0};
+int16_t CCDDebugSwitch=0;
+int16_t CCDDebugSwitch2=2;
 float FZBL= 0.5;                //0.35
 float FZBL1=0.6;
-int CCDt;
+int16_t CCDt;
 long CCDa;
-int FZ,CCDAvr0,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
-int LastC1=64,LastC2=64,LastC3=64;;
-int trackWidth=73; 
+int16_t FZ,CCDAvr0,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
+int16_t LastC1=64,LastC2=64,LastC3=64;;
+int16_t trackWidth=73; 
 float sWeight=0.6;
 float dWeight=0.4;
-char CCDFirstTime=true;
-int Lspeed,Rspeed,LspeedJF,RspeedJF;
-int speed,AngleControlOut;  
+int8_t CCDFirstTime=true;
+int16_t Lspeed,Rspeed,LspeedJF,RspeedJF;
+int16_t speed,AngleControlOut;  
 
 
 //============= Definition and parameters of Steering PID Control ==============
 float DirectionControlP=126;
 float DirectionControlD=-13.8;        //转向比例系数
-int DirectionControlPeriod=1;
+int16_t DirectionControlPeriod=1;
 float DError,DLastError,DDError;;
 float DirectionControlOutNew;
 float DirectionControlOutOld;
 float DirectionControlOut;
-int DirectionControlCount;
-int LOUT,ROUT;
+int16_t DirectionControlCount;
+int16_t LOUT,ROUT;
 
 
 
@@ -190,312 +191,46 @@ long map(long x, long in_min, long in_max, long out_min, long out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void CalculateCCD0 (void) {
-    int tempEdge;
-    if(CCDDebugSwitch2==1) {           //Enable median value filter
-     for(int i=1;i<127;i++){
-      CCDBuf[i]=mid(&CCDRAW[0][i-1]);
-      CCDBuf2[i]=CCDBuf[i]; 
-      } 
-    }
-    else{    
-     for(i=0;i<128;i++){
-      CCDBuf[i]=CCDRAW[0][i];  
-      CCDBuf2[i]=CCDRAW[0][i]; 
-     }
-    }
 
-    for(CCDt=0,CCDAvr0=0;CCDt<128;CCDt++) {
-      CCDAvr0=CCDa+CCDBuf2[CCDt];
-    }  
-    CCDAvr0=CCDAvr0/128;
-    FZ=CCDa*FZBL;
-     
-     if(angleFilter2>OriginPoint-10&&angleFilter2<OriginPoint+15) //-74~-49
-        if(CCDAvr0<Threshold*2/3)
-           obstacleSign=true;
-       
-       
-       for(CCDt=0,tempEdge=128,CCDEdge=0;CCDt+DCCD<128;CCDt++) {
-         if(abs(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD])>FZ) 
-          {
-          if(abs(tempEdge-CCDt)>DCCD*2) {
-            tempEdge=CCDt;
-            edge[CCDEdge]=CCDt;
-            CCDEdge++;
-          }
-          }
-       }
-      if(CCDEdge>5&&(millis()-scratchLineTimer)>10000) {
-        scratchLineCount++;
-        scratchLine=true;
-      }
-      
-      /*
-      if(CCDBuf2[LineCenter]>CCDa*0.71)
-        if(CCDBuf2[LineCenter+trackWidth/4]<CCDa*0.71)
-           if(CCDBuf2[LineCenter-trackWidth/4]<CCDa*0.71)
-              scratchLine=true;
-      */ 
-        for(CCDt=LineCenter;CCDt+DCCD<128;CCDt++)  //Rblack
-        {
-          if(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD]>FZ) 
-          {
-            Rblack=CCDt+DCCD;
-             for(CCDt=Rblack;CCDt<128;CCDt++) 
-            {
-              CCDBuf2[CCDt]=2;
-            }  
-          }
-        }
-    for(CCDt=LineCenter;CCDt-DCCD>=0;CCDt--)  //Lblack
-        {
-          if(CCDBuf2[CCDt]-CCDBuf2[CCDt-DCCD]>FZ) 
-          {
-            Lblack=CCDt-DCCD;
-            for(CCDt=Lblack;CCDt>=0;CCDt--) 
-            {
-              CCDBuf2[CCDt]=2;
-            }  
-          }
-        }
-        
-        if(Lblack>5&&Rblack<123)
-         trackWidth=Rblack-Lblack;
-        
-        if(Lblack>50)
-         LineCenter=Lblack+trackWidth/2;
-        else if(Rblack<78)
-         LineCenter=Rblack-trackWidth/2;
-        else
-         LineCenter=(Lblack+Rblack)/2; 
-        
-        
-        if(LineCenter+DCCD>125)
-          LineCenter=125;
-        else if(LineCenter<5)
-          LineCenter=5;
-        LastC1=LineCenter;
-
-        LastC3=LastC2;
-        LastC2=LastC1;
-
-        
-        LineCenter=FIR(FIRPar[3],LineCenter);
-
-}
 
 
  void SendCCDData(byte arr[]) 
 {
-  int i;
+  int16_t i;
  for(i=(64-WINDOW_WIDTH/2); i<(64+WINDOW_WIDTH/2); i++)
     {
 #if defined PRINT_AD          //串口发送AD值，可用于线性CCD调试助手
       if(arr[i]==0xFF) 
         arr[i] = 0xFE;        //遇到FF用FE替换即可
-      uart0_putchar(arr[i]);
+      uart0_putint8_t(arr[i]);
 #else                         //串口发送而值量，方便用串口调试
       if(arr[i]>CCD_THRESHOLD)
-        uart0_putchar(1);
+        uart0_putint8_t(1);
       else
-        uart0_putchar(0);
+        uart0_putint8_t(0);
 #endif     
     }
     
-    uart0_putchar(0xFF); 
+    uart0_putint8_t(0xFF); 
 }
   
 
-void initPort(void){ 
+void initPort(){ 
   DDRA=0XFF;  //PortA for PWM output
   DDRB=0X00;  //PortB for external counter input
   DDRH=0x00;  //PortH for detecting swithes
 }
 
-
-//Initialize the encoder,IOC7 and PT7for generating clk
-void initBMQ(void){   
-  TCNT = 0x00;
-  PACTL= 0xC0;  //Enable PAC
-  TIE  = 0x00;  //Disable ISR
-  PACNT = 0;
-  BMQR_RESET=LOW;
-} 
-
-//Since there's only one external counter in the chip so we
-//use another counter to measure the encoder on the left motor
-void getspeed (void) {
-  DisableInterrupts;
-  int tempL,tempR;
-  tempL=PORTB;       //Read the external encoder counter
-  tempR=PACNT;       //Read the internal counter
-  PACNT=0;
-  BMQR_RESET=HIGH;
-  Dly_us(1);
-  BMQR_RESET=HIGH;
-
-  SpeedL=SpeedL+tempL;
-  SpeedR=SpeedR+tempR;
-  EnableInterrupts;
-}
-
-//Loop unrolling to speed up
-float testGyroZ1=0,testGyroX1=0;
-void getADCValues (void) {
-    setADC12bit(); 
-    time2=micros();
-
-    float temp=0;
-    temp=readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)
-            +readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)
-            +readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)+readADC(GYRO_PIN_Z1)
-            +readADC(GYRO_PIN_Z1);
-    temp=temp/10.0;
-    testGyroZ1=temp;
-    gyro=(temp-GyroOffsetZ1)*GyroCoef; 
-     
-    temp=readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)
-      +readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)
-      +readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)+readADC(GYRO_PIN_X1)
-      +readADC(GYRO_PIN_X1);  
-    temp=temp/10.0;
-    testGyroX1=temp;
-    
-    temp=readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)
-          +readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)
-          +readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)+readADC(ACC_PIN_Z)
-          +readADC(ACC_PIN_Z);           
- 
-    AngleAZ=temp/10.0-AccOffset;
-    
-    temp=readADC(ACC_PIN_X)+readADC(ACC_PIN_X)+readADC(ACC_PIN_X)
-          +readADC(ACC_PIN_X)+readADC(ACC_PIN_X)+readADC(ACC_PIN_X)
-          +readADC(ACC_PIN_X)+readADC(ACC_PIN_X)+readADC(ACC_PIN_X)
-          +readADC(ACC_PIN_X);  
-    AngleAX=temp/10.0-AccOffset;  
-    
-    temp=readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)
-          +readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)
-          +readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)+readADC(ACC_PIN_Y)
-          +readADC(ACC_PIN_Y);  
-    AngleAY=temp/10.0-AccOffset;
-    
-    timer2=micros()-time2;
-}
-
-//Move these local variables up front so that we can see the values
-//in the debugger.
-float tempX,tempY,tempZ;
-void calculateAngle(void) 
-{
-    unsigned long time=0;   
-    
-    time1=micros();
-    
-    tempX=AngleAX*5/4096*1000/AccSense;
-    tempY=AngleAY*5/4096*1000/AccSense;
-    tempZ=AngleAZ*5/4096*1000/AccSense;
-    
-    
-    angleA=-atan2(AngleAX,AngleAZ)*180/PI;
-    gravity=sqrt(tempX*tempX+tempY*tempY+tempZ*tempZ);
-     //angleA2=AngleAZ/AccSense;
-    angleA=FIR(FIRPar[0],angleA); 
-    if(debug) {
-    gravityError=fabs(gravity-gravityG);
-
-    if(gravityError>gravityVibrationGate)// avoid vibration
-    {
-     weightFlag=10; 
-     weight=1;
-    } else{
-      weight=weight2+(weight1-weight2)*gravityError/gravityVibrationGate;
-      weightFlag=(weight-weight2)*100;
-      }
-    }
-    
-    
-    time=micros()-gyroTimer;
-    gyroTimeTest=time;
-    gyroTimer=micros();
-    if(time>50000)  //50ms,timeout
-     angleG2=0;     //large delay will effect the gyro integration
-    else
-     angleG2=(testGyroZ1-GyroOffsetZ1)*5/4096*1.5/5.1/GyroSense2*time/1000;
-    
-    angleFilter2=angleA*(1-weight)+(angleG2+angleFilter2)*weight;
-
-    timer1=micros()-time1;
-}
-
-
-
-void shutdown() {
-
-    MotorEnable=false;
-    PWMDTY01=0;
-    PWMDTY23=0;
-    PWMDTY67=0; 
-    PWMDTY45=0;
-}
-
-void turnon(){
-   MotorEnable=true;
-}
-void speedout (void) {
-  if(!MotorEnable)
-  return;
-
- if(fabs(Setpoint-angleFilter2)>45) {
-  LOUT=0;
-  ROUT=0;
- }
- 
- if(LOUT==0)
-  {
-    PWMDTY01=0;
-    PWMDTY23=0;  
-  } 
-  else if(LOUT>0) 
-    { 
-    PWMDTY01=0;
-    PWMDTY23=LOUT+MotorOffestL;  //L
-    } 
-  else if(LOUT<0) 
-    { 
-    PWMDTY23=0;
-    PWMDTY01=MotorOffestL-LOUT;
-    }
-  if(ROUT==0) 
-  {
-    PWMDTY67=0; 
-    PWMDTY45=0;
-  } 
-  else if(ROUT>0) 
-  {
-    PWMDTY45=ROUT+MotorOffestR;  
-    PWMDTY67=0;
-  }
-  
-  else if(ROUT<0) 
-  {
-    PWMDTY45=0; 
-    PWMDTY67=MotorOffestR-ROUT;
-  }
-}
-
-
-void Interrupt_Priority_Set(void){
-    INT_CFADDR=0x70;
-    INT_CFDATA5=0x05;
-    INT_CFADDR=0xD0;
-    INT_CFDATA3=0x07;
+void Interrupt_Priority_Set(){
+  INT_CFADDR=0x70;
+  INT_CFDATA5=0x05;
+  INT_CFADDR=0xD0;
+  INT_CFDATA3=0x07;
 }
 
 float FIROutput;
 
-void printout (void) { 
+void printout () { 
   putf(angleA);
   putf(angleFilter2);
   putf(64);
@@ -510,7 +245,7 @@ void printout (void) {
 
 
  void PID() {
-  int k=1;
+  int16_t k=1;
   Error=Setpoint-Input;
   Error=FIR(FIRPar[2],Error);
   ValueK=k;
@@ -528,7 +263,7 @@ void printout (void) {
   LastErr=Error;
 }
 
-void SpeedControl (void) {
+void SpeedControl () {
   float fP, fDelta;
   float fI;
   float fD;
@@ -576,16 +311,16 @@ void setSpeed(float myspeed) {
 }
 
 
-void SpeedControlOutput(void) {
+void SpeedControlOutput() {
   float fValue;
   fValue = SpeedControlOutNew - SpeedControlOutOld;
   SpeedControlOut=fValue * (SpeedControlPeriod + 1) /scPeriod + SpeedControlOutOld;
 }
 
 
-void DirectionControl(void) {
+void DirectionControl() {
   //float DError1;
-  int kk;
+  int16_t kk;
   float DErrorMult=1;
   DirectionControlOutOld = DirectionControlOutNew;
   DError=LineCenter-(64-3);
@@ -596,14 +331,14 @@ void DirectionControl(void) {
 }
 
 
-void DirectionControlOutput(void) {
+void DirectionControlOutput() {
   float fValue;
   fValue = DirectionControlOutNew - DirectionControlOutOld;
   DirectionControlOut=fValue * (DirectionControlPeriod + 1) /DirectionControlPeriod + DirectionControlOutOld;
 }
 
-void SpeedOutCalculate (void) {
-  int i;
+void SpeedOutCalculate () {
+  int16_t i;
   float temp=0;
   speed=Output-SpeedControlOut;
   
@@ -613,13 +348,13 @@ void SpeedOutCalculate (void) {
 }
 
 
-int samplecounter=0,sampletime=10, sampleSign=1;
+int16_t samplecounter=0,sampletime=10, sampleSign=1;
 float  tempGyroOffsetZ1=0,tempGyroOffsetZ2=0,tempGyroOffsetX1=0,tempGyroOffsetX2=0;
 float tempAccX=0,tempAccY=0,tempAccZ=0;
 
 void AccGyroCalibration() {
   for(;samplecounter<sampletime;samplecounter++) {
-    getADCValues();
+    getAccGyrovalues();
     tempGyroOffsetZ1+=testGyroZ1;
     tempGyroOffsetX1+=testGyroX1;
     tempAccX+=AngleAX;
@@ -645,8 +380,8 @@ void AccGyroCalibration() {
 
   putstr("\ngravityG=");
   putf(gravityG);
-  uart0_putchar('\n');
-  getADCValues ();
+  uart0_putint8_t('\n');
+  getAccGyrovalues ();
   angleFilter2=-atan2(AngleAX,AngleAZ)*180/PI;
   putstr("\n Acc Gyro Init Done\n");
   
@@ -654,7 +389,7 @@ void AccGyroCalibration() {
 
 
 void CCDCalibration() {
-  int i;
+  int16_t i;
   //There are actually two cameras on the car for experiment,
   //in this code,only one is used.
   RD_CCD(0);
@@ -672,15 +407,15 @@ void CCDCalibration() {
 
 
 
-char sendSign=0,updateSign=0;
-unsigned long speedTimer=0;
-unsigned long tt1,ttr1;
-unsigned char lastSwith,swithChange;
+int8_t sendSign=0,updateSign=0;
+uint32_t speedTimer=0;
+uint32_t tt1,ttr1;
+uint8_t lastSwith,swithChange;
 void main(){ 
-  //char c,cc; 
-  char temp;
-  char read;
-  int i;
+  //int8_t c,cc; 
+  int8_t temp;
+  int8_t read;
+  int16_t i;
   setbusclock_80M();
   Interrupt_Priority_Set();    
   Port_Init();     
@@ -753,15 +488,15 @@ void main(){
 float ccdSum=0;
 float time,timer;
 float t1,tr1,t2,tr2,t3,tr3,tr4,t4,tr5,t5;
-unsigned char temp,temp1,temp2=0,temp3=0;
-void interrupt 67 PIT1(void)
+uint8_t temp,temp1,temp2=0,temp3=0;
+void interrupt 67 PIT1()
 {
 
-   int i,j;
+   int16_t i,j;
    
-   int tempL,tempR;
-   int tempEdge;
-   int tempCCD;
+   int16_t tempL,tempR;
+   int16_t tempEdge;
+   int16_t tempCCD;
    float tempPoint,tempSpeed;
    time=micros();
    PITTF_PTF0 = 1; //clear interrupts flag
@@ -878,7 +613,7 @@ void interrupt 67 PIT1(void)
 
 
    
-   getADCValues ();
+   getAccGyrovalues ();
    calculateAngle();
    tr2=micros()-t2;
    

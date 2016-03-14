@@ -24,7 +24,7 @@ SOFTWARE.
 #include "derivative.h"      /* derivative-specific definitions */
 
 //Initialize the ADC module,set the A/D convertion clock to 1MHz
-void initADC(void){
+void initADC(){
   //ATD0CTL4: SMP2=1,SMP1=1,SMP0=1,PRS4=0,PRS3=1,PRS2=1,PRS1=1,PRS0=1 
   //ATD0CTL4 = 0b11101111; //Set the time and freq,fATDCLK=fBUS/(2 ¡Á(PRS + 1))
   ATD0CTL4 = 0b11100100; //et the time and freq,fATDCLK=fBUS/(2 ¡Á(PRS + 1)) 
@@ -55,7 +55,7 @@ void setADC12bit() {
   
 }
 
-int readADC(unsigned char Channel){  
+int16_t readADC(uint8_t Channel){  
   ATD0CTL5_Cx = Channel;
   while(!ATD0STAT0_SCF);
   return ATD0DR0;

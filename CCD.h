@@ -26,6 +26,9 @@ SOFTWARE.
 #define CCD0 0
 #define CCD1 1
 
-void readCCD(uchar channel);
+static inline void setCLKLow(const uint16_t time);
+static inline void setCLKHigh(const uint16_t time);
+static void startReadingCCD();
+void calculateCCD();
 
 #endif

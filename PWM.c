@@ -24,7 +24,7 @@ SOFTWARE.
 #include "derivative.h"      /* derivative-specific definitions */
 
 
-void initPWM(void){   
+void initPWM(){   
   //Cascade the PWM module 0 and 1 to 16bits for motor on the right
   PWMCTL_CON01 = 1;
   PWME_PWME1 = 0;

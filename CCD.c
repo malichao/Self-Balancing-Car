@@ -27,19 +27,19 @@ SOFTWARE.
  * */
 
 #include"Time_Function.h"
-#include <hidef.h>             /* common defines and macros */
-#include "derivative.h"        /* derivative-specific definitions */
-//#include "includes.h"
+//#include <hidef.h>             /* common defines and macros */
+//#include "derivative.h"        /* derivative-specific definitions */
+#include "macros.h"
 #include "ADC.h"
 
 
 
-inline void setCLKLow(int time){
-  TSL_CLK=0;    //Set the clk to low
+static inline void setCLKLow(const uint16_t time){
+  TSL_CLK=LOW;    //Set the clk to low
   delayUs(time);  //delay for 1us
 }
-inline void setCLKHigh(int time){
-  TSL_CLK=0;    //Set the clk to low
+static inline void setCLKHigh(const uint16_t time){
+  TSL_CLK=LOW;    //Set the clk to low
   delayUs(time);  //delay for 1us
 }
 
@@ -48,15 +48,14 @@ inline void setCLKHigh(int time){
  * set the SI signal to inform the CCD sensor to get ready.
  * See datasheet for timing detail.
  */
-void initCCD(){
-
-    TSL_SI=0;     
+static void startReadingCCD(){
+    TSL_SI=LOW;     
     setCLKLow(1);
     
-    TSL_SI=1;     
+    TSL_SI=HIGH;     
     delayUs(1);   
     
-    TSL_SI=0;     
+    TSL_SI=LOW;     
     setCLKHigh(1);
 }
 
@@ -64,13 +63,108 @@ void initCCD(){
  * Read the CCD sensor.Currently there are at most only two sensors on
  * the car.
  */
-void readCCD(int num){
-    DisableInterrupts;
-    InitCCD();
+void readCCD(uint16_t num){
+  DisableInterrupts;
+  startReadingCCD();
   for(int i=0;i<128;i++){
     setCLKLow(1);
     ADV[num][i]=ADC_Read(num);
     setCLKHigh(1);
   }
   EnableInterrupts;
+}
+
+void calculateCCD(void){
+    int tempEdge;
+    if(CCDDebugSwitch2==1) {           //Enable median value filter
+     for(int i=1;i<127;i++){
+      CCDBuf[i]=mid(&CCDRAW[0][i-1]);
+      CCDBuf2[i]=CCDBuf[i]; 
+      } 
+    }
+    else{    
+     for(i=0;i<128;i++){
+      CCDBuf[i]=CCDRAW[0][i];  
+      CCDBuf2[i]=CCDRAW[0][i]; 
+     }
+    }
+
+    for(CCDt=0,CCDAvr0=0;CCDt<128;CCDt++) {
+      CCDAvr0=CCDa+CCDBuf2[CCDt];
+    }  
+    CCDAvr0=CCDAvr0/128;
+    FZ=CCDa*FZBL;
+     
+     if(angleFilter2>OriginPoint-10&&angleFilter2<OriginPoint+15) //-74~-49
+        if(CCDAvr0<Threshold*2/3)
+           obstacleSign=true;
+       
+       
+       for(CCDt=0,tempEdge=128,CCDEdge=0;CCDt+DCCD<128;CCDt++) {
+         if(abs(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD])>FZ) 
+          {
+          if(abs(tempEdge-CCDt)>DCCD*2) {
+            tempEdge=CCDt;
+            edge[CCDEdge]=CCDt;
+            CCDEdge++;
+          }
+          }
+       }
+      if(CCDEdge>5&&(millis()-scratchLineTimer)>10000) {
+        scratchLineCount++;
+        scratchLine=true;
+      }
+      
+      /*
+      if(CCDBuf2[LineCenter]>CCDa*0.71)
+        if(CCDBuf2[LineCenter+trackWidth/4]<CCDa*0.71)
+           if(CCDBuf2[LineCenter-trackWidth/4]<CCDa*0.71)
+              scratchLine=true;
+      */ 
+        for(CCDt=LineCenter;CCDt+DCCD<128;CCDt++)  //Rblack
+        {
+          if(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD]>FZ) 
+          {
+            Rblack=CCDt+DCCD;
+             for(CCDt=Rblack;CCDt<128;CCDt++) 
+            {
+              CCDBuf2[CCDt]=2;
+            }  
+          }
+        }
+    for(CCDt=LineCenter;CCDt-DCCD>=0;CCDt--)  //Lblack
+        {
+          if(CCDBuf2[CCDt]-CCDBuf2[CCDt-DCCD]>FZ) 
+          {
+            Lblack=CCDt-DCCD;
+            for(CCDt=Lblack;CCDt>=0;CCDt--) 
+            {
+              CCDBuf2[CCDt]=2;
+            }  
+          }
+        }
+        
+        if(Lblack>5&&Rblack<123)
+         trackWidth=Rblack-Lblack;
+        
+        if(Lblack>50)
+         LineCenter=Lblack+trackWidth/2;
+        else if(Rblack<78)
+         LineCenter=Rblack-trackWidth/2;
+        else
+         LineCenter=(Lblack+Rblack)/2; 
+        
+        
+        if(LineCenter+DCCD>125)
+          LineCenter=125;
+        else if(LineCenter<5)
+          LineCenter=5;
+        LastC1=LineCenter;
+
+        LastC3=LastC2;
+        LastC2=LastC1;
+
+        
+        LineCenter=FIR(FIRPar[3],LineCenter);
+
 }

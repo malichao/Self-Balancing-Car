@@ -1,7 +1,7 @@
 /*
 Copyright (c) <2013> <Malcolm Ma>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy 
+Permission is hereby granted, free of int8_tge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
 in the Software without restriction, including without limitation the rights 
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
@@ -26,10 +26,10 @@ SOFTWARE.
 #define RX_BUFFER_SIZE 128
 #define SERIAL_NO_DATA 0
 
-void initUART0(void);
-void putchar(unsigned char ch);//uart0´òÓ¡×Ö·û
-void putstr(char ch[]);//uart0´òÓ¡×Ö·û´®
-void putf(float num);//uart0´òÓ¡¸¡µãÊý
-char readUART0();
+void initUART0();
+void putchar(uint8_t ch);	
+void putstr(int8_t ch[]);	
+void putf(float num);		
+int8_t readUART0();
 
 #endif

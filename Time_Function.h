@@ -28,15 +28,15 @@ SOFTWARE.
 #define TIMER0_COUNT 54321	
 #define TIMER1_COUNT 5000
 
-static unsigned long TimeMs=0;
-static unsigned long TimeMsMod=0;
-static unsigned long TimeUs=0;
+static uint32_t TimeMs=0;
+static uint32_t TimeMsMod=0;
+static uint32_t TimeUs=0;
 
-void setBuscClock80MHz(void);
-void delayUs(unsigned int);
-void delayMs(unsigned int);
-void initPIT(void);
-unsigned long micros(void);
-unsigned long millis(void);
+void setBuscClock80MHz();
+void delayUs(uint16_t);
+void delayMs(uint16_t);
+void initPIT();
+uint32_t micros();
+uint32_t millis();
 
 #endif
