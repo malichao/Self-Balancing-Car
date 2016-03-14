@@ -20,69 +20,51 @@
  SOFTWARE.
  */
 
-#include "math.h"
-#include "times"
-#include "macros.h"
 #include "filters.h"
 #include "IMU.h"
+#include "CCD.h"
+#include "motor.h"
 
-//============= Definition and parameters of Speed PID Control ==============
+
+static float BalanceAngle = -67;
+static float OriginalAngle = -71.5;
+float BalanceP = 1300, BalanceD = 14; //BalanceP=1250,BalanceD=18;
+
+static float DirectionP = 126;
+static float DirectionD = -13.8;       
+static float LineCenter=CCD_PIXELS/2;
+
+static float TargetSpeed;
 static float SpeedP = 32.0;
 static float SpeedI = 0;
 static float SpeedD = 0.0;
-int16_t CAR_SPEED_SET = 0;
-float MMperPulse = 0.14165, PulseperMM = 7.05965;
-float TargetSpeed = 0, TargetSpeedMM = -1350, fspeed, sp = 1, si = 0;
-float carSpeed;
-float SpeedIntegral=0,
-float SpeedControlOutOld=0,
-float SpeedControlOutNew=0,
-float SpeedControlOut=0;
-int16_t SpeedControlCount = 0;
-int16_t SpeedPeriod = 0;
-int16_t scPeriod = 10;
-int16_t ControlFlag = 0;
-int16_t SpeedL = 0, SpeedR = 0;
 
-//============= Definition and parameters of Steering PID Control ==============
-float DirectionControlP = 126;
-float DirectionControlD = -13.8;        //转向比例系数
-
-//Balancing control parameters
-static float BalanceAngle = -67;
-static float OriginalAngle = -71.5;
-static float TargetSpeed;
-static floatInput = 0, Output = 0; //前倾角度增大，后仰减小
-float kp = 1300, kd = 14; //kp=1250,kd=18;
-
-float val_kp, val_kd;
-
-void PIDControl(){
+void PIDControl(int16_t *speedL,int16_t *speedR){
   static uint8_t periodCount=0;
-  periodCount++;
-  balancePID();
-  if(periodCount%SPEED_CONTROL_PERIOD==0)
-    SpeedPID();
-  if(periodCount%DIRECTION_CONTROL_PERIOD==0)
-    DirectionPID();
 
+  periodCount++;
+  balancePID(speedL,speedR);
+  if(periodCount%SPEED_CONTROL_PERIOD==0)
+    SpeedPID(speedL,speedR);
+  if(periodCount%DIRECTION_CONTROL_PERIOD==0)
+    DirectionPID(speedL,speedR);
 }
 
-static void balancePID(int16_t *speedL,int16_t *speedR) {
-  static float error, dErr;
+static void balancePID(int16_t *speedL,int16_t *speedR){
+  static float error, dError;
   float output;
   error = BalanceAngle - getAngle();
   error = FIR(2, error);
 
   //The gyro output can be used as differential error
-  dErr = getAngularSpeed();       
-  output = kp * error- kd * dErr;
+  dError = getAngularSpeed(ANGULAR_SPEED_PITCH);      
+  output = BalanceP * error - BalanceD * dError;
 
   *speedL+=(int16_t)output;
   *speedR+=(int16_t)output;
 }
 
-static void speedPID(int16_t *speedL,int16_t *speedR) {
+static void speedPID(int16_t *speedL,int16_t *speedR){
   float outputP,outputI,outputD;
   float output;
 
@@ -111,38 +93,20 @@ static void speedPID(int16_t *speedL,int16_t *speedR) {
   *speedR+=(int16_t)output;
 }
 
-static void directionPID(int16_t *speedL,int16_t *speedR) {
-  float error, DLasterror, DDerror;
-  Derror = LineCenter - (64 - 3);
+static void directionPID(int16_t *speedL,int16_t *speedR){
+  float error, dErroror;
+  float output;
+  error = LineCenter - getLineCenter();
 
-  DDerror = testGyroX1 - GyroOffsetX1;
-  DirectionControlOutNew = Derror * DirectionControlP
-      - DDerror * DirectionControlD;
-  DLasterror = Derror;
-}
+  dErroror = getAngularSpeed(ANGULAR_SPEED_YAW);
+  output = error * DirectionP - dErroror * DirectionD;
 
-static void speedControlOutput() {
-  float temp;
-  temp = SpeedControlOutNew - SpeedControlOutOld;
-  SpeedControlOut = temp * (SpeedPeriod + 1) / scPeriod
-      + SpeedControlOutOld;
-}
+  if (output > DIRECTION_CONTROL_OUT_MAX)
+    output = DIRECTION_CONTROL_OUT_MAX;
+  if (output < DIRECTION_CONTROL_OUT_MIN)
+    output = DIRECTION_CONTROL_OUT_MIN;
 
-
-
-void DirectionControlOutput() {
-  float fValue;
-  fValue = DirectionControlOutNew - DirectionControlOutOld;
-  DirectionControlOut = fValue * (DirectionControlPeriod + 1)
-      / DirectionControlPeriod + DirectionControlOutOld;
-}
-
-void calculateSpeedOutput() { //SpeedOutCalculate
-  int16_t i;
-  float temp=0;
-  speed=Output-SpeedControOutputLeft;
-  
-  //DirectionControOutputLeft=0;//for ccd test only
-  OutputLeft=-(speed+DirectionControOutputLeft);
-  OutputRight=-(speed-DirectionControOutputLeft);
+  //Notice the speed output is differential value
+  *speedL+=(int16_t)output;
+  *speedR-=(int16_t)output;
 }

@@ -29,6 +29,7 @@ SOFTWARE.
  //Wheel diameter 50.5mm  perimeter=158.65mm
  //MMperPulse=158.65/1120=0.14165
  //PulseperMM=7.05965
+static float MMperPulse = 0.14165, PulseperMM = 7.05965;
 static int16_t OutputLeft, OutputRight;
 static int16_t MotorOffestL = 1900;          //Left Motor PWM output offset
 static int16_t MotorOffestR = 1800;          //Right Motor PWM output offset
@@ -72,25 +73,33 @@ int16_t getSpeedAll(){
   return (SpeedR+SpeedL)/2;
 }
 
-void setSpeed(float myspeed) {
-  SetSpeed = myspeed * PulseperMM * scPeriod * 5 / 1000;
-  SetSpeed = 0;
+//Set the target speed using millimeter metrics
+void setSpeedMM(const float speedMML,const float speedMMR) {
+  OutputLeft =(int16_t) (speedMML * PulseperMM * scPeriod * 5 / 1000);
+  OutputRight =(int16_t) (speedMMR * PulseperMM * scPeriod * 5 / 1000);
+  speedOut();
 }
 
-void shutDown() {
-    MotorEnable=false;
-    PWMDTY01=0;
-    PWMDTY23=0;
-    PWMDTY67=0; 
-    PWMDTY45=0;
+void setSpeed(const int16_t speedL,const int16_t speedR) {
+  OutputLeft =speedL;
+  OutputRight =speedR;
+  speedOut();
 }
 
-void turnOn(){
-   MotorEnable=true;
+void motorOff() {
+  MotorEnable=false;
+  PWMDTY01=0;
+  PWMDTY23=0;
+  PWMDTY67=0; 
+  PWMDTY45=0;
 }
 
+void motorOn(){
+  MotorEnable=true;
+  speedOut();
+}
 
-void speedOut(){   //speedout
+static void speedOut(){   //speedout
   if(!MotorEnable)
   return;
 

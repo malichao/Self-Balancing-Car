@@ -272,6 +272,11 @@ void interrupt 67 PIT1(){
 
   getAccGyrovalues();
   calculateAngle();
+
+  int16_t speedL,speedR;
+  int16_t *pL,*pR;
+  pL=&speedL;
+  pR=&speedR;
   PIDControl();
   
   SpeedOutCalculate();

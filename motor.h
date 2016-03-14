@@ -25,11 +25,12 @@ SOFTWARE.
 
 void initBMQ();
 void measureSpeed();
+void setSpeed(const int16_t speedL,const int16_t speedR);
+void setSpeedMM(const float speedMML,const float speedMMR);
 void getSpeed(int16_t *speedL,int16_t *speedR);
 int16_t getSpeedAll();
-void shutDown();
-void turnOn();
-void calculateSpeedOutput();
-void speedOut();
+void motorOff();
+void motorOn();
+static void speedOut();
 
 #endif

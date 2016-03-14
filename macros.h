@@ -57,10 +57,7 @@ SOFTWARE.
 #define ACC_PIN_Y 3
 #define ACC_PIN_Z 4
 
-//=== Definition of Speed PID Control === 
-#define CAR_SPEED_SET_MAX -500
-#define SPEED_CONTROL_OUT_MAX 8000
-#define SPEED_CONTROL_OUT_MIN -8000
+
 
 //=== Definition of Linear CCD Sensor === 
 #define DCCD 8

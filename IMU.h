@@ -7,9 +7,12 @@
 #define ACC_PIN_Y 3
 #define ACC_PIN_Z 4
 #define MAX_ANGLE 45.0
+#define ANGULAR_SPEED_PITCH 0
+#define ANGULAR_SPEED_YAW 1
 
 float getAngle();
-void getAccGyrovalues();
+float getAngularSpeed(int16_t axis);
+void getAccGyroValues();
 void calculateAngle();
 void AccGyroCalibration();
 #endif

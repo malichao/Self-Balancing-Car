@@ -23,11 +23,19 @@
 #define PIDCONTROLLER_H
 
 //=== Definition of Speed PID Control === 
-#define CAR_SPEED_SET_MAX -500
 #define SPEED_CONTROL_OUT_MAX 8000
 #define SPEED_CONTROL_OUT_MIN -8000
- 
+
+#define DIRECTION_CONTROL_OUT_MAX 5000
+#define DIRECTION_CONTROL_OUT_MIN -5000
+
 #define SPEED_CONTROL_PERIOD 4		//20ms @ 5ms timer ISR
 #define DIRECTION_CONTROL_PERIOD 10	//50ms @ 5ms timer ISR
+
+
+void PIDControl(int16_t *speedL,int16_t *speedR);
+static void balancePID(int16_t *speedL,int16_t *speedR);
+static void speedPID(int16_t *speedL,int16_t *speedR);
+static void directionPID(int16_t *speedL,int16_t *speedR);
 
 #endif

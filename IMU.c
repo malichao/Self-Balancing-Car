@@ -29,8 +29,12 @@ float getAngle(){
   return angleFinal;
 }
 
-float getAngularSpeed(){
-  return GyroZ1 - GyroOffsetZ1;
+float getAngularSpeed(int16_t axis){
+  if(axis==ANGULAR_SPEED_PITCH)
+    return GyroZ1 - GyroOffsetZ1;
+  if(axis==ANGULAR_SPEED_YAW)
+    return GyroX1 - GyroOffsetX1;
+  return 0;
 }
 
 //Use complementary filter to fuse the acc and gyro data
