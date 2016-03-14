@@ -24,6 +24,9 @@ SOFTWARE.
 #define Time_Function_h
 
 #define BUSCLOCK80M
+//Set profiling timer to this odd value to avoid the conflict of timer1
+#define TIMER0_COUNT 54321	
+#define TIMER1_COUNT 5000
 
 static unsigned long TimeMs=0;
 static unsigned long TimeMsMod=0;

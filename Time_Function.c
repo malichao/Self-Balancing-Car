@@ -108,42 +108,42 @@ void delayUs(unsigned int us){
 
 
 void initPIT(void) {
-  PITCFLMT_PITE = 0;      //Turn off timer 
-  PITCE_PCE0 = 1;         //Enable timer 0
-  PITMTLD0 = 80 - 1;      //Set timer count value,80 = 1us @80MHz
-  PITLD0 = 54321 - 1;     //Set timer overfloat time to 5.4321 ms
-  PITINTE_PINTE0 = 1;     //Enable timer ISR
-  PITCFLMT_PITE = 1;      //Turn on timer
+  PITCFLMT_PITE = 0;            //Turn off timer 
+  PITCE_PCE0 = 1;               //Enable timer 0
+  PITMTLD0 = 80 - 1;            //Set timer count value,80 = 1us @80MHz
+  PITLD0 = TIMER0_COUNT - 1;    //Set timer overfloat time
+  PITINTE_PINTE0 = 1;           //Enable timer ISR
+  PITCFLMT_PITE = 1;            //Turn on timer
 
-  PITLD1 = 5000 - 1;      //Set 16 bits timer interval to 5ms
-  PITCE_PCE1 = 1;         //Enable timer 1
-  PITINTE_PINTE1 = 1;     //Enable timer 1 ISR
+  PITLD1 = TIMER1_COUNT - 1;    //Set 16 bits timer interval to 5ms
+  PITCE_PCE1 = 1;               //Enable timer 1
+  PITINTE_PINTE1 = 1;           //Enable timer 1 ISR
 }
 
 //Profiling function,read the time in micros
 unsigned long micros() { 
-  return TimeUs+(54321-PITCNT0);
+  return TimeUs+(TIMER0_COUNT-PITCNT0);
 }
 
 //Profiling function,read the time in millis
 unsigned long millis() {
   unsigned long time=micros();
   if(time>500)
-    return (54321-PITCNT0)/1000+TimeMS+1;
-  return (54321-PITCNT0)/1000+TimeMS;
+    return (TIMER0_COUNT-PITCNT0)/1000+TimeMS+1;
+  return (TIMER0_COUNT-PITCNT0)/1000+TimeMS;
 }
 
 //Timer ISR
 #pragma CODE_SEG __NEAR_SEG NON_BANKED
 void interrupt 66 PIT0(void){
   PITTF_PTF0 = 1;       //clear interrupts flag
-  TimeMSMod+=321;
+  TimeMSMod+=TIMER0_COUNT%1000;
   if(TimeMSMod>=1000){
    TimeMSMod-=1000;
    TimeMS+=1;
   }
   TimeMS+=54;
-  TimeUs+=54321;
+  TimeUs+=TIMER0_COUNT;
 }
 #pragma CODE_SEG DEFAULT      
 
