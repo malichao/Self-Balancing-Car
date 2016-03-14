@@ -36,17 +36,6 @@ SOFTWARE.
 #define true 1
 #define false 0
 
-//Definition of gyros
-#define gyroPin_Z1 5
-#define gyroPin_Z2 7
-#define gyroPin_X1 6
-#define gyroPin_X2 15
-#define accPin_Z 4
-#define accPin_Y 3
-#define accPin_X 2
-float gyroOffset=121;
-float gyroZ,accX,accY,accZ;
-float angleG=0;
 
 //Definition of IO pins
 #define BMQR  PORTA_PA4  		//Encoder Reset
@@ -60,44 +49,43 @@ float angleG=0;
 #define CCD_THRESHOLD 100    	//binarization threshold
 #define WINDOW_WIDTH 128     //Set how many pixels to print 0~128
 
-//Balancing control parameters
-float GyroOffsetZ1=1950;
+//============= Definition and parameters of gyros and Accelerometers=============
+#define gyroPin_Z1 5
+#define gyroPin_Z2 7
+#define gyroPin_X1 6
+#define gyroPin_X2 15
+#define accPin_Z 4
+#define accPin_Y 3
+#define accPin_X 2
+float gyroOffset=121;
+float gyroZ,accX,accY,accZ;
+float angleG=0;
+//Four gyros: Z1 and Z2 for pitch angle,X1 and X2 for yaw angle 
+float GyroOffsetZ1=1950;			//Gyro offset value,set larger to tilt forward
 float GyroOffsetZ2=1950;
-float TLYLDX1=1950;
-float TLYLDX2=1950;
-//#define TLYLD 1950           //陀螺仪零点，前倾则增加
-float TLYBL=0.536;          //陀螺仪比例
-float TLYBLZ2=0.536;          //陀螺仪比例
-float TLYBLX1=0.536;         //陀螺仪比例
-float TLYBLX2=0.536;          //陀螺仪比例
-
-#define JSDLD 1365           //加速度计零点,往前跑则增加
+float GyroOffsetX1=1950;
+float GyroOffsetX2=1950;
+float GyroCoef=0.536;         		//Gyro coefficient,see datasheet for detail			
+float AccOffse= 1365;           		//Accelerometers offset value,set larger to tilt forward
 float KP=700.0;
 float KD=20.5;  
 float Tg =2.0;
 float kjifen=150.0;
-
-
-
-//速度控制
-float SPEED_CONTROL_P=32.0;
-float SPEED_CONTROL_I=0;
-float SPEED_CONTROL_D=0.0;
-#define M_SQ 0   //电机死区
-int M_SQL=1900;   //电机死区
-int M_SQR=1800;   //电机死区
-#define CAR_SPEED_SET_MAX -500
-int CAR_SPEED_SET =0;
-#define SPEED_CONTROL_OUT_MAX 8000
-#define SPEED_CONTROL_OUT_MIN -8000
-
-#define gyroPin_Z 5
-#define accPin_Z 4
-#define accPin_Y 3
-#define accPin_X 2
-
 int accOffset=1365;
 float angleAZ=0,angleAX=0,angleAY=0,angleA=0,angleFilter=0;
+
+
+//============= Definition and parameters of Speed PID Control ==============
+#define CAR_SPEED_SET_MAX -500
+#define SPEED_CONTROL_OUT_MAX 8000
+#define SPEED_CONTROL_OUT_MIN -8000
+float SpeedControlP=32.0;
+float SpeedControlI=0;
+float SpeedControlD=0.0;
+int MotorOffestL=1900;   				//Left Motor PWM output offset
+int MotorOffestR=1800;   				//Right Motor PWM output offset
+int CAR_SPEED_SET =0;
+
 
 //定义全局变量
 int CCDTime=0,ccdMultiple=1,CCDBL=3;
