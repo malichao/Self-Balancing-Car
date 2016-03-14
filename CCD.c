@@ -26,9 +26,9 @@ SOFTWARE.
  * be some definition problem and won't pass the compliler.
  * */
 
-#include"Time_Function.h"
-//#include <hidef.h>             /* common defines and macros */
-//#include "derivative.h"        /* derivative-specific definitions */
+#include "times"
+#include <hidef.h>             /* common defines and macros */
+#include "derivative.h"        /* derivative-specific definitions */
 #include "macros.h"
 #include "ADC.h"
 
@@ -74,7 +74,7 @@ void readCCD(uint16_t num){
   EnableInterrupts;
 }
 
-void calculateCCD(void){
+void calculateCCD(){
     int tempEdge;
     if(CCDDebugSwitch2==1) {           //Enable median value filter
      for(int i=1;i<127;i++){
@@ -99,15 +99,13 @@ void calculateCCD(void){
         if(CCDAvr0<Threshold*2/3)
            obstacleSign=true;
        
-       
-       for(CCDt=0,tempEdge=128,CCDEdge=0;CCDt+DCCD<128;CCDt++) {
-         if(abs(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD])>FZ) 
-          {
-          if(abs(tempEdge-CCDt)>DCCD*2) {
-            tempEdge=CCDt;
-            edge[CCDEdge]=CCDt;
-            CCDEdge++;
-          }
+       for(CCDt=0,tempEdge=128,CCDEdge=0;CCDt+DCCD<128;CCDt++){
+         if(abs(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD])>FZ){
+            if(abs(tempEdge-CCDt)>DCCD*2) {
+              tempEdge=CCDt;
+              edge[CCDEdge]=CCDt;
+              CCDEdge++;
+            }
           }
        }
       if(CCDEdge>5&&(millis()-scratchLineTimer)>10000) {
@@ -115,56 +113,59 @@ void calculateCCD(void){
         scratchLine=true;
       }
       
-      /*
-      if(CCDBuf2[LineCenter]>CCDa*0.71)
-        if(CCDBuf2[LineCenter+trackWidth/4]<CCDa*0.71)
-           if(CCDBuf2[LineCenter-trackWidth/4]<CCDa*0.71)
-              scratchLine=true;
-      */ 
-        for(CCDt=LineCenter;CCDt+DCCD<128;CCDt++)  //Rblack
-        {
-          if(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD]>FZ) 
-          {
-            Rblack=CCDt+DCCD;
-             for(CCDt=Rblack;CCDt<128;CCDt++) 
-            {
-              CCDBuf2[CCDt]=2;
-            }  
-          }
+      for(CCDt=LineCenter;CCDt+DCCD<128;CCDt++){  //Rblack
+        if(CCDBuf2[CCDt]-CCDBuf2[CCDt+DCCD]>FZ){
+          Rblack=CCDt+DCCD;
+          for(CCDt=Rblack;CCDt<128;CCDt++){
+            CCDBuf2[CCDt]=2;
+          }  
         }
-    for(CCDt=LineCenter;CCDt-DCCD>=0;CCDt--)  //Lblack
-        {
-          if(CCDBuf2[CCDt]-CCDBuf2[CCDt-DCCD]>FZ) 
-          {
+      }
+    for(CCDt=LineCenter;CCDt-DCCD>=0;CCDt--){   //Lblack
+          if(CCDBuf2[CCDt]-CCDBuf2[CCDt-DCCD]>FZ) {
             Lblack=CCDt-DCCD;
-            for(CCDt=Lblack;CCDt>=0;CCDt--) 
-            {
+            for(CCDt=Lblack;CCDt>=0;CCDt--){
               CCDBuf2[CCDt]=2;
             }  
           }
         }
         
-        if(Lblack>5&&Rblack<123)
-         trackWidth=Rblack-Lblack;
-        
-        if(Lblack>50)
-         LineCenter=Lblack+trackWidth/2;
-        else if(Rblack<78)
-         LineCenter=Rblack-trackWidth/2;
-        else
-         LineCenter=(Lblack+Rblack)/2; 
-        
-        
-        if(LineCenter+DCCD>125)
-          LineCenter=125;
-        else if(LineCenter<5)
-          LineCenter=5;
-        LastC1=LineCenter;
+    if(Lblack>5&&Rblack<123)
+     trackWidth=Rblack-Lblack;
+    
+    if(Lblack>50)
+     LineCenter=Lblack+trackWidth/2;
+    else if(Rblack<78)
+     LineCenter=Rblack-trackWidth/2;
+    else
+     LineCenter=(Lblack+Rblack)/2; 
+    
+    
+    if(LineCenter+DCCD>125)
+      LineCenter=125;
+    else if(LineCenter<5)
+      LineCenter=5;
+    LastC1=LineCenter;
 
-        LastC3=LastC2;
-        LastC2=LastC1;
+    LastC3=LastC2;
+    LastC2=LastC1;
 
-        
-        LineCenter=FIR(FIRPar[3],LineCenter);
+    
+    LineCenter=FIR(FIRPar[3],LineCenter);
+}
 
+void CCDCalibration(){
+  //There are actually two cameras on the car for experiment,
+  //in this code,only one is used.
+  RD_CCD(0);
+  for(int16_t i=0;i<10;i++) {
+    //Delay some time between two sampling
+      Dly_ms(ccdMultiple*5-1);
+      RD_CCD(0);
+      CalculateCCD0();
+      Threshold+=CCDAvr0;
+  }
+  //Calculate the average value
+  Threshold/=10;
+  obstacleSign=false;
 }
