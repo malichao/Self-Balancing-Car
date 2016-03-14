@@ -48,6 +48,15 @@ SOFTWARE.
 #define PRINT_AD   					//toggle if print the ADC values or binarized values
 #define CCD_THRESHOLD 100    	//binarization threshold
 #define WINDOW_WIDTH 128     //Set how many pixels to print 0~128
+#define CMD_TURN_LEFT '!'
+#define CMD_TURN_RIGHT '@'
+#define CMD_FORWARD '#'
+#define CMD_BACKWARD '$'
+#define CMD_RUN '%'
+#define CMD_STOP '^'    
+#define CMD_SET_SPEED '&'
+#define CMD_SET_GYROOFFSET '&'
+char debug=1;
 
 //============= Definition and parameters of gyros and Accelerometers=============
 #define gyroPin_Z1 5
@@ -71,68 +80,15 @@ float KP=700.0;
 float KD=20.5;  
 float Tg =2.0;
 float kjifen=150.0;
-int accOffset=1365;
-float angleAZ=0,angleAX=0,angleAY=0,angleA=0,angleFilter=0;
-
-
-//============= Definition and parameters of Speed PID Control ==============
-#define CAR_SPEED_SET_MAX -500
-#define SPEED_CONTROL_OUT_MAX 8000
-#define SPEED_CONTROL_OUT_MIN -8000
-float SpeedControlP=32.0;
-float SpeedControlI=0;
-float SpeedControlD=0.0;
-int MotorOffestL=1900;   				//Left Motor PWM output offset
-int MotorOffestR=1800;   				//Right Motor PWM output offset
-int CAR_SPEED_SET =0;
-
-
-//定义全局变量
-int CCDTime=0,ccdMultiple=1,CCDBL=3;
-byte ADV[2][128]={0,0};         //声明数组，用于存放采集的线性数值 
-byte CCDLine[128]={0};
-int CCDDebugSwitch=0,CCDDebugSwitch2=2;
-float FZBL= 0.5;//0.35
-float FZBL1=0.6;
-int CCDt;
-long CCDa;
-#define DCCD 8
-int FZ,CCDAvr,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
-int FZ1,CCDAvr1,Rblack1,LastRblack1,Lblack1,LastLblack1,LineCenter1=64;
-int LastC1=64,LastC2=64,LastC3=64;;
-int trackWidth=73; 
-float sWeight=0.6;
-float dWeight=0.4;
-char CCDFirstTime=true;
+int    accOffset=1365;
+float angleAZ=0;
+float angleAX=0;
+float angleAY=0;
+float angleA=0;
+float angleFilter=0;
 float gyro,Aangle;
-int Lspeed,Rspeed,LspeedJF,RspeedJF;
 float gyro,angle,jifen; 
-int speed,AngleControlOut;  
-
-float KDIR=126,DDIR=-13.8;      //转向比例系数
-int dcPeriod=1;
-float DError,DLastError,DDError;;
-float g_fDirectionControlOutNew,g_fDirectionControlOutOld,g_fDirectionControlOut,ZX;
-int g_nDirectionControlPeriod;
-int g_nDirectionControlCount;
-int LOUT,ROUT;
-float g_fCarSpeed,g_fSpeedControlIntegral=0,g_fSpeedControlOutOld=0,g_fSpeedControlOutNew=0,g_fSpeedControlOut=0;
-int g_nSpeedControlCount = 0;
-int g_nSpeedControlPeriod = 0;
-int scPeriod=10;  
-int ControlFlag=0;
-int Lspeed,Rspeed,LspeedJF,RspeedJF;
-float gyro,Aangle;
-#define CMD_TURN_LEFT '!'
-#define CMD_TURN_RIGHT '@'
-#define CMD_FORWARD '#'
-#define CMD_BACKWARD '$'
-#define CMD_RUN '%'
-#define CMD_STOP '^'    
-#define CMD_SET_SPEED '&'
-#define CMD_SET_GYROOFFSET '&'
-
-char debug=1;
+//Balancing control parameters
 unsigned long gyroTimer=0;
 float weightFlag=0;
 float GyroSense=0.01;
@@ -148,8 +104,64 @@ float ka=0.1;
 float Error,dErr,LastErr=0;
 float val_kp,val_kd;
 
+
+//============= Definition and parameters of Speed PID Control ==============
+#define CAR_SPEED_SET_MAX -500
+#define SPEED_CONTROL_OUT_MAX 8000
+#define SPEED_CONTROL_OUT_MIN -8000
+float SpeedControlP=32.0;
+float SpeedControlI=0;
+float SpeedControlD=0.0;
+int MotorOffestL=1900;   				//Left Motor PWM output offset
+int MotorOffestR=1800;   				//Right Motor PWM output offset
+int CAR_SPEED_SET =0;
 float MMperPulse=0.14165,PulseperMM=7.05965;
 float SetSpeed=0,SetSpeedMM=-1350,fspeed,sp=1,si=0;
-float SError=0,SErrI=0;
-float SOutput=0;
+float CarSpeed;
+float SpeedControlIntegral=0,
+float SpeedControlOutOld=0,
+float SpeedControlOutNew=0,
+float SpeedControlOut=0;
+int SpeedControlCount = 0;
+int SpeedControlPeriod = 0;
+int scPeriod=10;  
+int ControlFlag=0;
+int Lspeed,Rspeed,LspeedJF,RspeedJF;
+
+//============= Definition and parameters of Linear CCD Sensor==============
+int CCDTime=0;
+int ccdMultiple=1,
+int CCDBL=3;
+unsigned char ADV[2][128]={0};     //声明数组，用于存放采集的线性数值 
+unsigned char CCDLine[128]={0};
+int CCDDebugSwitch=0;
+int CCDDebugSwitch2=2;
+float FZBL= 0.5;								//0.35
+float FZBL1=0.6;
+int CCDt;
+long CCDa;
+#define DCCD 8
+int FZ,CCDAvr,Rblack,LastRblack,Lblack,LastLblack,LineCenter=64;
+int FZ1,CCDAvr1,Rblack1,LastRblack1,Lblack1,LastLblack1,LineCenter1=64;
+int LastC1=64,LastC2=64,LastC3=64;;
+int trackWidth=73; 
+float sWeight=0.6;
+float dWeight=0.4;
+char CCDFirstTime=true;
+int Lspeed,Rspeed,LspeedJF,RspeedJF;
+int speed,AngleControlOut;  
+
+
+//============= Definition and parameters of Steering PID Control ==============
+float DirectionControlP=126;
+float DirectionControlD=-13.8;      	//转向比例系数
+int DirectionControlPeriod=1;
+float DError,DLastError,DDError;;
+float DirectionControlOutNew;
+float DirectionControlOutOld;
+float DirectionControlOut;
+int DirectionControlCount;
+int LOUT,ROUT;
+
+
 #endif

@@ -75,8 +75,6 @@ CCD数据中值滤波
 
 P=36 SetSpeedMM=1800
 
-
-
 ********************************************************/
 
 #include "derivative.h"
@@ -88,154 +86,62 @@ P=36 SetSpeedMM=1800
 #include "PWM.h"
 #include "includes.h"
 
-                                                      
+#define FIR_NUM 5
+#define FIR_TAPS 5
 
+struct FIRParameter{
+  int taps;
+  int k;
+  float gain;
+  float *coef;
+  float *values;
+}FIRPar[FIR_NUM];
 
+float coef1[FIR_NUM][FIR_TAPS] = {
+  {0.001193,0.010720,0.026164,0.026164,0.010720}, //LOW_PASS,Fs=40,RECTANGLE,wp=10,ws=11
+  {0.000000,0.318310,0.500000,0.500000,0.318310}, //LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
+  {0.006055,0.092153,0.261644,0.261644,0.092153}, //LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
+  {0.006055,0.092153,0.261644,0.261644,0.092153}, //LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
+  {0.001193,0.010720,0.026164,0.026164,0.010720}  //LOW_PASS,Fs=200,HAMMING,wp=3,ws=9
+};
+float gain[FIR_NUM]={13.340246,611015,1.401247,1.401247,13.340246};    
+float values[FIR_NUM][FIR_TAPS] = {0}; 
 
+float FIR(int index,float input){
+  float output = 0;
+  int k=k;
+  int taps=FIRPar[index].taps;
+  FIRPar[index].[k] = input;
+  for (int i=0; i<taps; i++) {
+     output += FIRPar[index].coef[i] * FIRPar[index].>values[(i + k) % taps];
+  }
+  output *= FIRPar[index]gain;
+  k = (k+1) % taps;
+  FIRPar[index].k=k;
+  return output;
+}
 
-
-//LOW_PASS,Fs=200,HAMMING,wp=3,ws=9
-#define FILTERTAPS 5
-float coef[FILTERTAPS] = {0.001193,0.010720,0.026164,0.026164,0.010720};
-float gain=13.340246;    
-float values[FILTERTAPS] = {0}; 
-
-float FIR(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values[k] = in; 
-   for (i=0; i<FILTERTAPS; i++) {            
-     out += coef[i] * values[(i + k) % FILTERTAPS];                          
+void initFIR(){
+  for(int i=0;i<5;i++){
+    FIRPar[i].gain=gain[i];
+    FIRPar[i].taps=sizeof(coef)/sizeof(coef[0]);
+    FIRPar[i].k=0;
+    for(int j=0;j<5;j++){
+      FIRPar[i].coef[j]=coef[i][j];
+      FIRPar[i].values[j]=0;
     }
-    out *= gain;                        
-    k = (k+1) % FILTERTAPS;                  
-    return out;                        
+  }
 }
 
 
-
-
-
-//LOW_PASS,Fs=40,RECTANGLE,wp=10,ws=11
-#define FILTERTAPS2 5
-float coef2[FILTERTAPS2] = {0.000000,0.318310,0.500000,0.500000,0.318310};
-float gain2=0.611015;
-
-
-float values2[FILTERTAPS2] = {0}; 
-
-float FIR2(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values2[k] = in; 
-   for (i=0; i<FILTERTAPS2; i++) {            
-     out += coef2[i] * values2[(i + k) % FILTERTAPS2];                          
-    }
-    out *= gain2;                        
-    k = (k+1) % FILTERTAPS2;                  
-    return out;                        
-}
-
-
-
-
-
-
-//LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
-#define FILTERTAPS3 5
-float coef3[FILTERTAPS3] = {0.006055,0.092153,0.261644,0.261644,0.092153};
-float gain3=1.401247;
-float values3[FILTERTAPS3] = {0}; 
-
-float FIR3(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values3[k] = in; 
-   for (i=0; i<FILTERTAPS3; i++) {            
-     out += coef3[i] * values3[(i + k) % FILTERTAPS3];                          
-    }
-    out *= gain3;                        
-    k = (k+1) % FILTERTAPS3;                  
-    return out;                        
-}
-
-
-
-
-
-//LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
-#define FILTERTAPS4 5
-float coef4[FILTERTAPS4] = {0.006055,0.092153,0.261644,0.261644,0.092153};
-float gain4=1.401247;
-float values4[FILTERTAPS4] = {0}; 
-
-float FIR4(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values4[k] = in; 
-   for (i=0; i<FILTERTAPS4; i++) {            
-     out += coef4[i] * values4[(i + k) % FILTERTAPS4];                          
-    }
-    out *= gain4;                        
-    k = (k+1) % FILTERTAPS4;                  
-    return out;                        
-}
-
-//LOW_PASS,Fs=20,HAMMING,wp=3,ws=9
-#define FILTERTAPS5 5
-float coef5[FILTERTAPS5] = {0.006055,0.092153,0.261644,0.261644,0.092153};
-float gain5=1.401247;
-float values5[FILTERTAPS4] = {0}; 
-
-float FIR5(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values5[k] = in; 
-   for (i=0; i<FILTERTAPS5; i++) {            
-     out += coef5[i] * values5[(i + k) % FILTERTAPS5];                          
-    }
-    out *= gain5;                        
-    k = (k+1) % FILTERTAPS5;                  
-    return out;                        
-}
-
-
-//LOW_PASS,Fs=200,HAMMING,wp=3,ws=9
-#define FILTERTAPS6 5
-float coef6[FILTERTAPS6] = {0.001193,0.010720,0.026164,0.026164,0.010720};
-float gain6=13.340246;    
-float values6[FILTERTAPS6] = {0}; 
-
-float FIR6(float in){
-   static byte k;
-   byte i = 0; 
-   float out = 0;
-   values6[k] = in; 
-   for (i=0; i<FILTERTAPS6; i++) {            
-     out += coef6[i] * values6[(i + k) % FILTERTAPS6];                          
-    }
-    out *= gain;                        
-    k = (k+1) % FILTERTAPS6;                  
-    return out;                        
-}
-
-
-long map(long x, long in_min, long in_max, long out_min, long out_max)
-{
+long map(long x, long in_min, long in_max, long out_min, long out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void CalculateCCD0 (void) 
-{
-   int i; 
+void CalculateCCD0 (void) {
    int tempEdge;
    if(CCDDebugSwitch2==1) {
-   for(i=1;i<127;i++){
+   for(int i=1;i<127;i++){
     
     CCDBuf[i]=mid(ADV[0][i-1],ADV[0][i],ADV[0][i+1]);  
     CCDBuf2[i]=CCDBuf[i]; 
@@ -325,7 +231,7 @@ void CalculateCCD0 (void)
         LastC2=LastC1;
 
         
-        LineCenter=FIR4(LineCenter);
+        LineCenter=FIR(FIRPar[3],LineCenter);
 
 }
 
@@ -335,12 +241,12 @@ void CalculateCCD0 (void)
   int i;
  for(i=(64-WINDOW_WIDTH/2); i<(64+WINDOW_WIDTH/2); i++)
     {
-#if(PRINT_AD==1)          //串口发送AD值，可用于线性CCD调试助手
+#if defined PRINT_AD          //串口发送AD值，可用于线性CCD调试助手
       if(arr[i]==0xFF) 
-        arr[i] = 0xFE; //遇到FF用FE替换即可
+        arr[i] = 0xFE;        //遇到FF用FE替换即可
       uart0_putchar(arr[i]);
-#else                     //串口发送而值量，方便用串口调试
-      if(arr[i]>THRESHOLD)
+#else                         //串口发送而值量，方便用串口调试
+      if(arr[i]>CCD_THRESHOLD)
         uart0_putchar(1);
       else
         uart0_putchar(0);
@@ -409,7 +315,7 @@ void getAD (void)
          +ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5)+ADChannelx(5);
     temp=tlycs/10.0;
     testGyroZ1=temp;
-    gyro=(temp-TLYLDZ1)*TLYBL; 
+    gyro=(temp-GyroOffsetZ1)*GyroCoef; 
      
     
     tlycs=ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6)+ADChannelx(6) 
@@ -424,7 +330,7 @@ void getAD (void)
      jiao=ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4)
           +ADChannelx(4)+ADChannelx(4)+ADChannelx(4) + ADChannelx(4)+ADChannelx(4);           
     Aangle=jiao/20.0;                
-    Aangle=(Aangle-JSDLD)*0.13;//0.12;  
+    Aangle=(Aangle-AccOffse)*0.13;//0.12;  
     angleAZ=jiao/10.0-accOffset;
     
     jiao=ADChannelx(2)+ADChannelx(2)+ADChannelx(2) + ADChannelx(2)+ADChannelx(2)
@@ -461,7 +367,7 @@ void AngleCalculate (void)
     angleA=-atan2(angleAX,angleAZ)*180/PI;
     gravity=sqrt(tempX*tempX+tempY*tempY+tempZ*tempZ);
      //angleA2=angleAZ/AccSense;
-    angleA=FIR(angleA); 
+    angleA=FIR(FIRPar[0],angleA); 
     if(debug) {
     gravityError=fabs(gravity-gravityG);
     /*
@@ -496,9 +402,9 @@ void AngleCalculate (void)
     if(time>50000)  //50ms,timeout
      angleG2=0;     //large delay will effect the gyro integration
     else
-     angleG2=(testGyroZ1-TLYLDZ1)*5/4096*1.5/5.1/GyroSense2*time/1000;
+     angleG2=(testGyroZ1-GyroOffsetZ1)*5/4096*1.5/5.1/GyroSense2*time/1000;
     
-    //TurnSpeed=(testGyroX1-TLYLDX1+testGyroX2-TLYLDX2)*GyroSense/2.0;
+    //TurnSpeed=(testGyroX1-GyroOffsetX1+testGyroX2-GyroOffsetX2)*GyroSense/2.0;
     
     
     //angleG=(testGyro-TLYLD)*0.00911;
@@ -541,12 +447,12 @@ void speedout (void)
   else if(LOUT>0) 
     { 
     PWMDTY01=0;
-    PWMDTY23=LOUT+M_SQL;  //L
+    PWMDTY23=LOUT+MotorOffestL;  //L
     } 
   else if(LOUT<0) 
     { 
     PWMDTY23=0;
-    PWMDTY01=M_SQL-LOUT;
+    PWMDTY01=MotorOffestL-LOUT;
     }
   if(ROUT==0) 
   {
@@ -555,14 +461,14 @@ void speedout (void)
   } 
   else if(ROUT>0) 
   {
-    PWMDTY45=ROUT+M_SQR;  
+    PWMDTY45=ROUT+MotorOffestR;  
     PWMDTY67=0;
   }
   
   else if(ROUT<0) 
   {
     PWMDTY45=0; 
-    PWMDTY67=M_SQR-ROUT;
+    PWMDTY67=MotorOffestR-ROUT;
   }
 }
 
@@ -591,13 +497,13 @@ void printout (void)
    */
   uart0_putf(angleA);
   uart0_putf(angleFilter2);
-  //uart0_putf(g_fSpeedControlOutNew);
+  //uart0_putf(SpeedControlOutNew);
   uart0_putf(64);
   uart0_putf(LineCenter);
   uart0_putf(LineCenter1);
   
   uart0_putf(fspeed);
-  uart0_putf(g_fCarSpeed*MMperPulse*1000/(5*scPeriod));
+  uart0_putf(CarSpeed*MMperPulse*1000/(5*scPeriod));
   
   
   uart0_putstr(" \n\r");  
@@ -607,11 +513,10 @@ void printout (void)
  void PID() {
  int k=1;
  Error=Setpoint-Input;
- Error=FIR3(Error);
- k=map(Error,-180,180,0,60);
+ Error=FIR(FIRPar[2],Error);
  ValueK=k;
 // dErr=angleG2;      //kp=1600,kd=4000;
- dErr=testGyroZ1-TLYLDZ1;   //kp=1900,kd=20;
+ dErr=testGyroZ1-GyroOffsetZ1;   //kp=1900,kd=20;
   {
     /*
     if(fabs(Setpoint-Input)<1) 
@@ -643,33 +548,33 @@ void SpeedControl (void)
   static lastErr=0;
 
   
-  g_fCarSpeed = (LspeedJF+RspeedJF) / 2;
+  CarSpeed = (LspeedJF+RspeedJF) / 2;
   LspeedJF=RspeedJF=0;
   
-  g_fCarSpeed*=1.0;
-  g_fCarSpeed=FIR2(g_fCarSpeed);
+  CarSpeed*=1.0;
+  CarSpeed=FIR(FIRPar[1],CarSpeed);
 
   /*
-  if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<100)//300
-   P=SPEED_CONTROL_P*0.2;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<150) //500
-   P=SPEED_CONTROL_P*0.3;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<200) //500
-   P=SPEED_CONTROL_P*0.4;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<250) //500
-   P=SPEED_CONTROL_P*0.5;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<300) //500
-   P=SPEED_CONTROL_P*0.6;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<350) //500
-   P=SPEED_CONTROL_P*0.7;
-  else if(fabs(g_fCarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<400) //500
-   P=SPEED_CONTROL_P*0.8;
+  if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<100)//300
+   P=SpeedControlP*0.2;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<150) //500
+   P=SpeedControlP*0.3;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<200) //500
+   P=SpeedControlP*0.4;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<250) //500
+   P=SpeedControlP*0.5;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<300) //500
+   P=SpeedControlP*0.6;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<350) //500
+   P=SpeedControlP*0.7;
+  else if(fabs(CarSpeed*MMperPulse*scPeriod/1000-SetSpeedMM)<400) //500
+   P=SpeedControlP*0.8;
   else 
-   P=SPEED_CONTROL_P;
+   P=SpeedControlP;
   */ 
-  P=SPEED_CONTROL_P;
-  fDelta = SetSpeed- g_fCarSpeed;
-  fDelta=FIR5(fDelta);
+  P=SpeedControlP;
+  fDelta = SetSpeed- CarSpeed;
+  fDelta=FIR(FIRPar[4],fDelta);
   
   if(fDelta>=0)
     k=map(fDelta,0,1000,0,45);
@@ -678,21 +583,21 @@ void SpeedControl (void)
   speedK=tangent[k];  
    
   fP = fDelta * P*speedK;
-  fI = fDelta * SPEED_CONTROL_I*speedK;
-  fD = (fDelta-lastErr) * SPEED_CONTROL_D*speedK;
+  fI = fDelta * SpeedControlI*speedK;
+  fD = (fDelta-lastErr) * SpeedControlD*speedK;
   lastErr=fDelta;
-  g_fSpeedControlIntegral += fI;
+  SpeedControlIntegral += fI;
   
   
 
-  g_fSpeedControlOutOld = g_fSpeedControlOutNew;
+  SpeedControlOutOld = SpeedControlOutNew;
 
-  g_fSpeedControlOutNew = fP + g_fSpeedControlIntegral-fD;
+  SpeedControlOutNew = fP + SpeedControlIntegral-fD;
   
-  if(g_fSpeedControlOutNew > SPEED_CONTROL_OUT_MAX) 
-    g_fSpeedControlOutNew = SPEED_CONTROL_OUT_MAX;
-  if(g_fSpeedControlOutNew < SPEED_CONTROL_OUT_MIN)   
-    g_fSpeedControlOutNew = SPEED_CONTROL_OUT_MIN;
+  if(SpeedControlOutNew > SPEED_CONTROL_OUT_MAX) 
+    SpeedControlOutNew = SPEED_CONTROL_OUT_MAX;
+  if(SpeedControlOutNew < SPEED_CONTROL_OUT_MIN)   
+    SpeedControlOutNew = SPEED_CONTROL_OUT_MIN;
   
   
   }
@@ -707,8 +612,8 @@ void SpeedControl (void)
  void SpeedControlOutput(void) 
 {
   float fValue;
-  fValue = g_fSpeedControlOutNew - g_fSpeedControlOutOld;
-  g_fSpeedControlOut=fValue * (g_nSpeedControlPeriod + 1) /scPeriod + g_fSpeedControlOutOld;
+  fValue = SpeedControlOutNew - SpeedControlOutOld;
+  SpeedControlOut=fValue * (SpeedControlPeriod + 1) /scPeriod + SpeedControlOutOld;
 }
 
 
@@ -717,7 +622,7 @@ void DirectionControl(void)
   //float DError1;
   int kk;
   float DErrorMult=1;
-  g_fDirectionControlOutOld = g_fDirectionControlOutNew;
+  DirectionControlOutOld = DirectionControlOutNew;
   DError=LineCenter-(64-3);
   //DError1=LineCenter1-64;
   
@@ -736,10 +641,10 @@ void DirectionControl(void)
      DErrorMult*=1.8;
   
    */
-  DDError=testGyroX1-TLYLDX1;
+  DDError=testGyroX1-GyroOffsetX1;
   //kk=map(fabs(DDError),0,65,0,45);
   //DErrorMult=tangent[kk];
-  g_fDirectionControlOutNew=DError*KDIR*DErrorMult-DDError*DDIR*DErrorMult;
+  DirectionControlOutNew=DError*DirectionControlP*DErrorMult-DDError*DirectionControlD*DErrorMult;
   DLastError=DError; 
   /*
   fspeed=SetSpeedMM+fabs(DError*6);
@@ -753,20 +658,20 @@ void DirectionControl(void)
 
 void DirectionControlOutput(void) {
   float fValue;
-  fValue = g_fDirectionControlOutNew - g_fDirectionControlOutOld;
-  g_fDirectionControlOut=fValue * (g_nDirectionControlPeriod + 1) /dcPeriod + g_fDirectionControlOutOld;
-  //g_fDirectionControlOut=0;   
+  fValue = DirectionControlOutNew - DirectionControlOutOld;
+  DirectionControlOut=fValue * (DirectionControlPeriod + 1) /DirectionControlPeriod + DirectionControlOutOld;
+  //DirectionControlOut=0;   
 }
 
 void SpeedOutCalculate (void) 
 {
   int i;
   float temp=0;
-  speed=Output-g_fSpeedControlOut;
+  speed=Output-SpeedControlOut;
   
-  //g_fDirectionControlOut=0;//for ccd test only
-  LOUT=-(speed+g_fDirectionControlOut);
-  ROUT=-(speed-g_fDirectionControlOut);
+  //DirectionControlOut=0;//for ccd test only
+  LOUT=-(speed+DirectionControlOut);
+  ROUT=-(speed-DirectionControlOut);
 }
 
 
@@ -787,10 +692,10 @@ void AccGyroCalibration() {
   }
   gyroOffset=tempGyroOffsetZ1/sampletime;
   
-  TLYLDZ1=tempGyroOffsetZ1/sampletime;
-  TLYLDZ2=tempGyroOffsetZ2/sampletime;
-  TLYLDX1=tempGyroOffsetX1/sampletime;
-  TLYLDX2=tempGyroOffsetX2/sampletime;
+  GyroOffsetZ1=tempGyroOffsetZ1/sampletime;
+  GyroOffsetZ2=tempGyroOffsetZ2/sampletime;
+  GyroOffsetX1=tempGyroOffsetX1/sampletime;
+  GyroOffsetX2=tempGyroOffsetX2/sampletime;
   
   tempAccX/=sampletime;
   tempAccY/=sampletime;
@@ -948,7 +853,7 @@ void interrupt 67 PIT1(void)
    temp=PTH;
     StopCarOn=temp&0b00000001;
     //temp1=temp&0b00000111;
-    //SPEED_CONTROL_P=temp1*12;
+    //SpeedControlP=temp1*12;
     temp1=temp>>3&0b00000111;
     if(temp1==0)
      SetSpeedMM=0;
@@ -979,7 +884,7 @@ void interrupt 67 PIT1(void)
             break;
     case 1:
             if(abs(LineCenter-64)<8) {
-            tempSpeed= g_fCarSpeed*MMperPulse*1000/(5*scPeriod);
+            tempSpeed= CarSpeed*MMperPulse*1000/(5*scPeriod);
              if(tempSpeed-900>SetSpeedMM)
                 tempPoint=OriginPoint+5;
              else if(tempSpeed-800>SetSpeedMM)
@@ -1063,23 +968,23 @@ void interrupt 67 PIT1(void)
    getspeed();
    Input=angleFilter2;
    PID();
-   g_nSpeedControlPeriod ++;
+   SpeedControlPeriod ++;
    SpeedControlOutput();  
    DirectionControlOutput();
-   g_nSpeedControlCount ++;
-   if(g_nSpeedControlCount >=scPeriod) 
+   SpeedControlCount ++;
+   if(SpeedControlCount >=scPeriod) 
    { 
         SpeedControl();
-        g_nSpeedControlCount = 0;
-        g_nSpeedControlPeriod = 0;        
+        SpeedControlCount = 0;
+        SpeedControlPeriod = 0;        
     }
     
-    g_nDirectionControlCount++;   
-      if(g_nDirectionControlCount >=dcPeriod) 
+    DirectionControlCount++;   
+      if(DirectionControlCount >=DirectionControlPeriod) 
       {
         DirectionControl();
-        g_nDirectionControlCount = 0;
-        g_nDirectionControlPeriod = 0;
+        DirectionControlCount = 0;
+        DirectionControlPeriod = 0;
       }
     SpeedOutCalculate ();   
    //LOUT=-(Output);
