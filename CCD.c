@@ -64,7 +64,7 @@ void initCCD(){
  * Read the CCD sensor.Currently there are at most only two sensors on
  * the car.
  */
-void readCCD(CCD num){
+void readCCD(int num){
     DisableInterrupts;
     InitCCD();
   for(int i=0;i<128;i++){

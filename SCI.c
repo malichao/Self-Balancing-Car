@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -25,135 +25,77 @@ SOFTWARE.
 #include "stdio.h"
 #include "math.h"
 #include "SCI.h"
-//---------------------------------------------------------------------
-// 函数功能：UART0_Init初始化
-// 形式参数：  无
-// 函数返回值：无   
-//---------------------------------------------------------------------
-int rx_buffer_head = 0;
-int rx_buffer_tail = 0;
+
+
+int rxBufferHead = 0;
+int rxBufferTail = 0;
 char rx_buffer[RX_BUFFER_SIZE]={0};
 
 
-void UART0_Init(void)
-{
+void initUART0(void){
   SCI0CR1 = 0x00; 
-  SCI0CR2 = 0x2C;     //接收中断使能，发送接收使能
+  SCI0CR2 = 0x2C;     //enable RX ISR
   SCI0BD  = 130;       //521--9600
-  //SCI0BD  = 130;     //波特率配置成38400,fbus=80M
+  //SCI0BD  = 130;     //set buadrate to 38400 @ fbus=80M
                       //When IREN = 0 then 
                       //SCI baud rate = SCI bus clock / (16 x SBR[12:0])
 }
 
-
-
-//---------------------------------------------------------------------
-// 函数功能：SCI0发送一个字节数据
-// 形式参数：  byte ch：发送的一个字节数据
-// 函数返回值：无   
-//---------------------------------------------------------------------
-
-
-void uart0_putchar(unsigned char ch)
-{
- 	if (ch == '\n')  
-  {
-      while(!(SCI0SR1&0x80)) ;     
-      SCI0DRL= 0x0d;       				 //output'CR'
-	    return;
-  }
-  while(!(SCI0SR1&0x80)) ; 		    //keep waiting when not empty  
+//Send a char through UART0,sending character is using polling mode
+//since sending values are not as important as other tasks and it should
+//give its priority to other tasks.
+void putchar(unsigned char ch){
+  while(!(SCI0SR1&0x80)) ; 		    //Simple polling mode
   SCI0DRL=ch;	
 }
 
-//---------------------------------------------------------------------
-// 函数功能：SCI0发送字符串数据
-// 形式参数：   byte *pBuff     发送缓冲区
-//              int Length 发送字节的长度 
-// 函数返回值：无   
-//---------------------------------------------------------------------
-void uart0_sendpacket(byte *pBuf,int pBuf_Length) 
-{
-  int i;
-  for(i=0;i<pBuf_Length;i++)
-  {
-    while(!(SCI0SR1&0x80));
-    SCI0DRL=*(pBuf+i); 
-  }
+//Send a string through the UART0,this function calls the putchar function 
+//to do the job.
+void putstr(unsigned char ch[]){
+  int i=0;
+  while(ch[i]){
+      uart0_putchar((unsigned char)ch[i++]);
+  }      
 }
- 
 
-void uart0_putstr(char ch[])
-{
-  unsigned char ptr=0;
-  while(ch[ptr]){
-      uart0_putchar((unsigned char)ch[ptr++]);
-  }     
-  
-}
-void uart0_putf(float num)
-{
-  char buf[20]={0};
+//A function to print float type through UART,the function calls the built-in
+//far_sprintf to convert the number.
+void putf(float num){
+  unsigned char buf[20]={0};
   (void)far_sprintf(buf,"%.3f,",num);
   uart0_putstr(buf);
 }
 
-
-
-char uart0_read()
-{
+//Read the data from RX buffer,which is a cyclic array.It returns 0 if the buffer
+//is empty.And it stop receiving if the buffer is full.
+char readUART0(){
   char data  ;
-  if (rx_buffer_head == rx_buffer_tail) {
+  if (rxBufferHead == rxBufferTail) {
     return SERIAL_NO_DATA;
   } else {
-    data = rx_buffer[rx_buffer_tail];
-    rx_buffer_tail++;
-    if (rx_buffer_tail == RX_BUFFER_SIZE) { rx_buffer_tail = 0; }
+    data = rx_buffer[rxBufferTail];
+    rxBufferTail++;
+    if (rxBufferTail == RX_BUFFER_SIZE) { rxBufferTail = 0; }
     return data;
   }
 }
-char uart0_available() {
-    if (rx_buffer_head == rx_buffer_tail) {
-    return SERIAL_NO_DATA;
-    return 1;
-  }
-}
-unsigned char SciRead(){
-    
-    if(SCI0SR1_RDRF==1)     //表明数据从位移寄存器传输到SCI数据寄存器
-      {      SCI0SR1_RDRF=1;     //读取数据寄存器会将RDRF清除  重新置位 
-           return SCI0DRL;        //返回数据寄存器的数据
-        }
-        
-}
 
-
-void SciWrite2(unsigned char sendchar){
-    while (!(SCI0SR1&0x80));    
-    SCI0DRH=0;    
-    SCI0DRL=sendchar;
-    }
-
-
+//RX ISR
 #pragma CODE_SEG NON_BANKED
-
 interrupt 20 void SCI_RX_IRS(void){
-byte RxData,RX;
-byte next_head;
-DisableInterrupts;
-RX=SCI0SR1;
-//读状态寄存器，为清零作准备
-RxData=(byte)SCI0DRL; //读接收寄存器的值
-//uart0_putchar(RxData);
-next_head = rx_buffer_head + 1;
-if (next_head == RX_BUFFER_SIZE) { next_head = 0; }
-if (next_head != rx_buffer_tail) {
-        rx_buffer[rx_buffer_head] = RxData;
-        rx_buffer_head = next_head;  
-}
-EnableInterrupts;
+  unsigned char rxData;
+  unsigned char nextHead;
+  DisableInterrupts;
+
+  rxData=(byte)SCI0DRL;             //Read the RX value in register
+
+  nextHead = rxBufferHead + 1;
+  if (nextHead == RX_BUFFER_SIZE) { //If reach the end of buffer,set to 0
+    nextHead = 0; 
+ }
+  if (nextHead != rxBufferTail) {   //If buffer is empty then put it in
+    rx_buffer[rxBufferHead] = RxData;
+    rxBufferHead = nextHead;  
+  }
+  EnableInterrupts;
 }  
-
-
-
-

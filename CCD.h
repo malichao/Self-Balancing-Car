@@ -1,5 +1,5 @@
 /*
-Copyright (c) <2013> <Malcolm Ma>
+Copyright (c) <2013-2016> <Malcolm Ma>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to deal 
@@ -23,7 +23,8 @@ SOFTWARE.
 #ifndef CCD_H
 #define CCD_H
 
-enum CCD{CCD0,CCD1};
+#define CCD0 0
+#define CCD1 1
 
 void readCCD(uchar channel);
 
