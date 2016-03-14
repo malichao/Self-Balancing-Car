@@ -120,17 +120,13 @@ void main() {
   for (;;) {
     if (CCDDebugSwitch == 0)
       printout();
-    if (switchChange == true) {
-      Dly_ms(2000);
-      switchChange = false;
-    }
     if (CCDDebugSwitch == 1)
       sendCCDData(CCDBuf);
-    sendSign = 0;
+    //If cross the finish line,the car stop there to wait for pick up
     if (reachedEnd() == true) {
-      if (StopCarAtFinish == true) {
-        shutdown();
-        while (StopCarAtFinish == true);  //wait for start signal
+      if (StopCarAtFinish == true) {      
+        motorOff();
+        while (StopCarAtFinish == true);  
       }
     }
   }
@@ -138,28 +134,34 @@ void main() {
 
 
 void checkSwitch() {
-  static uint8_t lastSwitch, switchChange;
-  uint8_t temp,temp1;
+  static uint8_t lastSwitch;
+  uint8_t temp,switchValue;
 
   float setSpeedMM;
 
   //reading switches signal
-  temp = PTH;
-  StopCarAtFinish = temp & 0b00000001;
-  //temp1=temp&0b00000111;
-  //SpeedControlP=temp1*12;
+  switchValue = PTH;
+  if(switchValue==lastSwitch)  //If nothing new detected,return
+    return;
+  lastSwitch=switchValue;
+
+  //bot0 for determine if the car stops after crossing the finish line
+  StopCarAtFinish = switchValue & 0b00000001;
+
+  //bit1 - bit3 for setting the speed
   temp1 = temp >> 3 & 0b00000111;
   if (temp1 == 0)
     setSpeedMM = 0;
   else
     setSpeedMM = -1400 + temp1 * 200 * -1;  //steady state :1800
 
-  //setSpeed(setSpeedMM);
+  //bit6 for decreasing the car pitch angle
   temp1 = temp >> 6 & 0b0000001;
   if (temp1 != temp2) {
     DefaultAngle -= 1;
     temp2 = temp1;
   }
+  //bit7 for increasing the car pitch angle
   temp1 = temp >> 7 & 0b0000001;
   if (temp1 != temp3) {
     DefaultAngle += 1;
