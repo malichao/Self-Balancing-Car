@@ -45,11 +45,54 @@ void initBMQ() {
   DDRB = 0X00;  //PortB for external counter input
 }
 
+//Set the target speed using millimeter metrics
+void setSpeedMM(const float speedMML, const float speedMMR) {
+  OutputLeft = (int16_t) (speedMML * PulseperMM * scPeriod * 5 / 1000);
+  OutputRight = (int16_t) (speedMMR * PulseperMM * scPeriod * 5 / 1000);
+  updateMotor();
+}
+
+void setSpeed(const int16_t speedL, const int16_t speedR) {
+  OutputLeft = speedL;
+  OutputRight = speedR;
+  updateMotor();
+}
+
+void motorOff() {
+  MotorEnable = false;
+  turnOffPWM();
+}
+
+void motorOn() {
+  MotorEnable = true;
+  updateMotor();
+}
+
+void getSpeed(int16_t *speedL, int16_t *speedR) {
+  *speedL = SpeedL;
+  *speedR = SpeedR;
+}
+
+int16_t getSpeedAll() {
+  return (SpeedR + SpeedL) / 2;
+}
+
+//Call this function as often as possible
+void updateMotor() {
+  measureSpeed();
+  //If the car is tilting too much,shut down the motor and stop the car
+  if (fabs(getAngle()) > MAX_ANGLE) {
+    motorOff();
+    return;
+  }
+  speedOut();
+}
+
 //Since there's only one external counter in the chip so we
 //use another counter to measure the encoder on the left motor.
 //This function should be called as often as possible so that the
 //external counter won't overflow.
-void measureSpeed() {
+static void measureSpeed() {
   DisableInterrupts;
   int tempL, tempR;
   tempL = PORTB;       //Read the external encoder counter
@@ -63,49 +106,6 @@ void measureSpeed() {
   SpeedR = SpeedR + tempR;
   EnableInterrupts;
 }
-
-void getSpeed(int16_t *speedL, int16_t *speedR) {
-  *speedL = SpeedL;
-  *speedR = SpeedR;
-}
-
-int16_t getSpeedAll() {
-  return (SpeedR + SpeedL) / 2;
-}
-
-//Set the target speed using millimeter metrics
-void setSpeedMM(const float speedMML, const float speedMMR) {
-  OutputLeft = (int16_t) (speedMML * PulseperMM * scPeriod * 5 / 1000);
-  OutputRight = (int16_t) (speedMMR * PulseperMM * scPeriod * 5 / 1000);
-  speedOut();
-}
-
-void setSpeed(const int16_t speedL, const int16_t speedR) {
-  OutputLeft = speedL;
-  OutputRight = speedR;
-  speedOut();
-}
-
-void motorOff() {
-  MotorEnable = false;
-  turnOffPWM();
-}
-
-void motorOn() {
-  MotorEnable = true;
-  speedOut();
-}
-
-//Call this function as often as possible
-void updateMotor() {
-  //If the car is tilting too much,shut down the motor and stop the car
-  if (fabs(getAngle()) > MAX_ANGLE) {
-    motorOff();
-    return;
-  }
-  speedOut();
-}
-
 
 static void speedOut() {   //speedout
   if (!MotorEnable)

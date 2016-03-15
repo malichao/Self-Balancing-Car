@@ -188,22 +188,18 @@ void checkSwitch() {
  */
 #pragma CODE_SEG __NEAR_SEG NON_BANKED
 void interrupt 67 PIT1(){
-  PITTF_PTF0 = 1;         //clear interrupts flag
+  PITTF_PTF0 = 1;                   //clear interrupts flag
   PORTA_PA7=1;
 
-  checkSwitch();
-  measureSpeed();
-  updateCCD();
-  updateIMU();
+  checkSwitch();                   //Test different setting using switches        
+  updateMotor();                   //Read encoders,update PWM,check safety problem
+  updateCCD();                    //Read CCD data,calculate track information
+  updateIMU();                    //Read gyro and accelerometer data,fuse data
   
-  int16_t speedL,speedR;
-  int16_t *pL,*pR;
-  pL=&speedL;
-  pR=&speedR;
-  
-  PIDControl(pL,pR);
-  setSpeed(*pL,*pR);
-  updateMotor();
+  int16_t outputL=0,outputR=0;
+  PIDControl(&outputL,&outputR);  //Balance control,speed control,steering control
+  setSpeed(outputL,outputR);      //Set the new speed for the car
+  updateMotor();                  //Read encoders,update PWM,check safety problem
 }
 #pragma CODE_SEG DEFAULT         
 

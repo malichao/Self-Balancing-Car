@@ -27,11 +27,11 @@ void initBMQ();
 void motorOff();
 void motorOn();
 void updateMotor();
-void measureSpeed();
 int16_t getSpeedAll();
 void getSpeed(int16_t *speedL,int16_t *speedR);
 void setSpeed(const int16_t speedL,const int16_t speedR);
 void setSpeedMM(const float speedMML,const float speedMMR);
 
 static void speedOut();
+static void measureSpeed();
 #endif
