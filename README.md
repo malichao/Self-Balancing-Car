@@ -11,6 +11,6 @@ And here are some snapshots of my car.
 
 ### Want more detail about this project? ###
 
-A detailed explanation of the hardware and coding on my website[Building A Self Balancing Race Car](http://lichaoma.com/2015/11/17/self-balancing-smart-car-based-on-freescale-mc9s12x128/)
+A detailed explanation of the hardware and coding on my website [Building A Self Balancing Race Car](http://lichaoma.com/2015/11/17/self-balancing-smart-car-based-on-freescale-mc9s12x128/)
 
-I also modeled the car in Solidworks,you can download the model from my [GrabCAD](https://grabcad.com/library/self-balancing-car-1).
+I also modeled the car in Solidworks,you can download the model from my [GrabCAD](https://grabcad.com/library/self-balancing-car-1) account.
