@@ -1,4 +1,4 @@
-# Self-Balancing-Car
+# Self Balancing Car
 This is a self-balacing car I built in 2013.I built this robot for the Freescale Cup Smart Car Competition.You can check out my compition video [here](https://youtu.be/HWOfQ2LwfWA).This car runs on two wheels,it uses gyro and accelerometer to detect the tilt angle and uses three PID controller to keep the car balanced,running,and navigating along the race track.
 
 Here are some snapshots of my car.
